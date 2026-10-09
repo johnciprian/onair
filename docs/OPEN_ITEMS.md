@@ -36,4 +36,4 @@ Losing any of these makes releases harder, so each one is backed up in 1Password
 | --- | --- | --- |
 | Sparkle update key (EdDSA) | Login Keychain, account `onair`; signs each update in `scripts/release.sh` | "OnAir Sparkle update signing key (private)". Restore: `generate_keys --account onair -f <file>` |
 | "OnAir Release Signing" certificate | Login Keychain; signs every build in `scripts/build.sh` | "OnAir release code-signing certificate (private)", a PEM with key and certificate. Restore: convert to .p12 with `openssl pkcs12 -export` and import it |
-| GPG key for hello@johnciprian.dev | Signs commits in this repo (`git config user.signingkey`) | Not backed up yet |
+| GPG key for hello@johnciprian.dev | Signs commits in this repo (`git config user.signingkey`) | "GPG key: John Ciprian <hello@johnciprian.dev> (private, passphrase-protected)", plus its revocation certificate. Restore: `gpg --import <file>` |
