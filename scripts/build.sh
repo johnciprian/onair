@@ -1,13 +1,12 @@
 #!/bin/bash
-# Builds build/OnAir.app, universal (Apple silicon + Intel).
+# Builds build/OnAir.app for Apple silicon (Intel Macs aren't supported).
 #   scripts/build.sh install   also copies it to /Applications and relaunches it.
 #   scripts/build.sh release   also zips it as build/OnAir-<version>.zip for sharing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP=build/OnAir.app
-# macOS 26 is the last release for Intel Macs, so they're still worth building for.
-ARCHS=(--arch arm64 --arch x86_64)
+ARCHS=(--arch arm64)
 swift build -c release "${ARCHS[@]}"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"

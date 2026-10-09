@@ -1,7 +1,7 @@
 # OnAir
 
 **Always know if they can hear you.** OnAir is a small native macOS menu bar app that shows whether your Zoom
-microphone is live — and gives you one hotkey to mute, unmute, push-to-talk, and cough.
+microphone is live, and gives you one hotkey to mute, unmute, push-to-talk, and cough.
 
 <p align="center">
   <img src="docs/images/menu-bar-live.png" alt="The menu bar sign reading ON AIR in red" height="44">
@@ -18,9 +18,9 @@ microphone is live — and gives you one hotkey to mute, unmute, push-to-talk, a
   - **Hold while muted** to talk (push-to-talk); let go to mute again.
   - **Hold while live** to cough (momentary mute); let go to go live again.
 - **Optional on-screen cues**, all off by default and switched on from the menu:
-  - **Floating badge** — a small ON AIR / OFF AIR badge you can drag anywhere; it snaps to screen edges.
-  - **Screen-edge glow** — a thin red rim that slowly pulses around every display while you're live.
-  - **Toggle flash** — a volume-HUD-style confirmation in the middle of the screen on every mute change,
+  - **Floating badge:** a small ON AIR / OFF AIR badge you can drag anywhere; it snaps to screen edges.
+  - **Screen-edge glow:** a thin red rim that slowly pulses around every display while you're live.
+  - **Toggle flash:** a volume-HUD-style confirmation in the middle of the screen on every mute change,
     whether you used OnAir or Zoom itself.
 - **Instant feedback.** Zoom takes up to ~1.3 s to update after a mute; OnAir shows the new state immediately and
   then confirms it with Zoom.
@@ -28,8 +28,8 @@ microphone is live — and gives you one hotkey to mute, unmute, push-to-talk, a
 
 ## Requirements
 
-- macOS 26 (Tahoe) or later, Apple silicon or Intel
-- The Zoom desktop app (`zoom.us`), set to **English** — see [Limitations](#limitations)
+- macOS 26 (Tahoe) or later on a Mac with Apple silicon
+- The Zoom desktop app (`zoom.us`), set to **English** (see [Limitations](#limitations))
 
 ## Install
 
@@ -43,7 +43,7 @@ cd onair
 scripts/build.sh install
 ```
 
-This builds a universal `OnAir.app`, copies it to `/Applications`, and launches it.
+This builds `OnAir.app`, copies it to `/Applications`, and launches it.
 
 ### First launch
 
@@ -56,7 +56,7 @@ A short setup window walks you through three steps:
    OnAir never sees it. Turn it off in **Zoom → Settings → Keyboard Shortcuts** ("Mute/Unmute My Audio").
    OnAir detects the clash and ticks this step off by itself once it's resolved.
 
-If you use a menu bar manager (Bartender, Ice, Hidden Bar), ⌘-drag OnAir into the always-visible section — new
+If you use a menu bar manager (Bartender, Ice, Hidden Bar), ⌘-drag OnAir into the always-visible section, because new
 menu bar items often start out hidden.
 
 ## Usage
@@ -65,7 +65,7 @@ Click the menu bar sign to open the menu:
 
 | Item | What it does |
 | --- | --- |
-| Status row | The current state in words, e.g. "Microphone Live — Zoom". |
+| Status row | The current state in words, e.g. "Microphone Live" with "Zoom" underneath. |
 | **Mute / Unmute** | Toggles Zoom's mic. Shows your hotkey; disabled outside a meeting. |
 | **Show On Screen** | Turns the floating badge, screen-edge glow, and toggle flash on or off. |
 | **Settings…** (⌘,) | Change the hotkey, launch at login, and check Accessibility access. |
@@ -91,7 +91,7 @@ from screen sharing and screenshots where macOS allows it.
 ## Limitations
 
 - **Zoom in English only.** OnAir finds Zoom's menu items by their English titles. With Zoom set to another
-  language it will always show "Not in a Meeting". Support for other languages is planned.
+  language it will always show "Not in a Meeting".
 - **Zoom desktop only.** Zoom in a web browser, Microsoft Teams, Google Meet, and other apps aren't supported.
 - **Not on the Mac App Store.** App Store apps must run in a sandbox, which doesn't allow controlling another app
   through Accessibility.
@@ -122,9 +122,9 @@ open --env ONAIR_DEMO=1 build/OnAir.app      # demo mode: cycles states every 3 
 swift scripts/make-icon.swift                # re-render the icon's layers
 ```
 
-- **`Sources/OnAirCore`** — pure logic with no UI or system calls (state parsing, hotkey press timing, optimistic
+- **`Sources/OnAirCore`:** pure logic with no UI or system calls (state parsing, hotkey press timing, optimistic
   display, badge snapping, shortcut validation). Everything here is unit tested.
-- **`Sources/OnAir`** — the app: Zoom access, the status item and menu, windows, and overlays.
+- **`Sources/OnAir`:** the app: Zoom access, the status item and menu, windows, and overlays.
 
 **Demo mode** runs OnAir as a regular app (with a Dock icon) and leaves its overlays capturable, so screenshot
 tools can see everything.
@@ -143,3 +143,15 @@ Gatekeeper on other Macs (they can still open it via **System Settings → Priva
 To ship a build that opens normally, sign it with a **Developer ID Application** certificate (Apple Developer
 Program) and notarize it with `xcrun notarytool`. The build already uses the hardened runtime that
 notarization requires.
+
+## Roadmap
+
+Open items and decisions are tracked in [docs/OPEN_ITEMS.md](docs/OPEN_ITEMS.md).
+
+## License
+
+Free to use, including at work and in businesses, and free to modify and share. You may not sell OnAir, or a
+product or service whose value comes substantially from it. See [LICENSE](LICENSE): the MIT License with the
+[Commons Clause](https://commonsclause.com) condition.
+
+Because of that condition, OnAir is *source-available* rather than open source in the OSI sense.

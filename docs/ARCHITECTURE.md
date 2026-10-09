@@ -2,9 +2,9 @@
 
 OnAir is a Swift package with two targets and no third-party dependencies:
 
-- **`OnAirCore`** (library) — pure logic: no AppKit, no Accessibility, no timers. Fully unit tested in
+- **`OnAirCore`** (library): pure logic, with no AppKit, no Accessibility, no timers. Fully unit tested in
   `Tests/OnAirCoreTests`.
-- **`OnAir`** (executable) — the app. It talks to Zoom and the system, and draws everything.
+- **`OnAir`** (executable): the app. It talks to Zoom and the system, and draws everything.
 
 `scripts/build.sh` wraps the executable in an `.app` bundle (Info.plist, icon compiled with `actool`), signs it,
 and optionally installs or zips it.
@@ -37,17 +37,17 @@ AppModel.setZoom(muted:) ◄── Hotkey (Carbon) ◄── PressLogic (tap vs 
                          ◄── menu "Mute / Unmute"
 ```
 
-### Reading Zoom — `Zoom/ZoomController.swift`
+### Reading Zoom: `Zoom/ZoomController.swift`
 
 The only file that knows about Zoom. Zoom has no API for its mute state, so OnAir reads the title of the
 mute item in Zoom's **Meeting** menu through the Accessibility API, and presses that item to change it.
 `OnAirCore/ZoomMenu.swift` turns the menu's titles into a `MicState` and picks the item to press.
 
-- While Zoom isn't running, a poll is only a running-apps lookup — no Accessibility calls.
+- While Zoom isn't running, a poll is only a running-apps lookup, with no Accessibility calls.
 - Accessibility calls time out after 0.25 s, so a hung Zoom can't freeze OnAir.
 - `readState()` returns `nil` when Zoom couldn't be read; see `StickyState` below.
 
-### Smoothing the readings — `OnAirCore`
+### Smoothing the readings: `OnAirCore`
 
 - **`StickyState`** keeps the last good state through up to four failed reads in a row. An Accessibility call
   to Zoom occasionally fails or times out; without this one bad read would flicker the sign to "Not in a
@@ -57,7 +57,7 @@ mute item in Zoom's **Meeting** menu through the Accessibility API, and presses 
   readings. If Zoom hasn't confirmed within 2.5 s, OnAir shows whatever Zoom reports, so a press that silently
   failed can't leave the display wrong.
 
-### The hotkey — `Hotkey/`, `OnAirCore/PressLogic.swift`, `OnAirCore/KeyCombo.swift`
+### The hotkey: `Hotkey/`, `OnAirCore/PressLogic.swift`, `OnAirCore/KeyCombo.swift`
 
 - `Hotkey` registers the combo with Carbon's `RegisterEventHotKey`, which delivers both press and release
   system-wide without needing Input Monitoring permission.
@@ -68,7 +68,7 @@ mute item in Zoom's **Meeting** menu through the Accessibility API, and presses 
 - `KeyCombo` validates recorded shortcuts (⌃ or ⌘ required, except F13–F20) and renders them as keycaps, a
   display string, and a native menu key equivalent.
 - `ZoomShortcut` reads Zoom's own hotkey preferences to warn when Zoom's global Mute shortcut uses the same
-  keys — in that case Zoom gets the key first and OnAir never sees it.
+  keys. In that case Zoom gets the key first and OnAir never sees it.
 
 ### Displays
 
