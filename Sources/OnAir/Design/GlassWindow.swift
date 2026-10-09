@@ -35,8 +35,8 @@ enum GlassWindow {
         panel.contentView = glass
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        // Outside the rounded glass the window is fully transparent, so the system shadow follows the glass shape.
-        panel.hasShadow = true
+        // The system shadow traces the square window frame (a dark outline around the rounded glass), not the glass.
+        panel.hasShadow = false
         // Floating so it can't open buried behind other apps (macOS may not activate a just-launched menu bar app).
         panel.level = .floating
         panel.isReleasedWhenClosed = false
