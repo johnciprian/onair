@@ -15,6 +15,7 @@ final class AppModel {
     private(set) var hotkeyAvailable = true
     private var press = PressLogic()
     private let recorder = HotkeyRecorder()
+    private let flash = FlashWindow()
 
     init() {
         let zoom = ZoomController()
@@ -69,9 +70,18 @@ final class AppModel {
     }
 
     private func toggleZoom() {
+        // Demo mode has no Zoom to press; flash anyway so the flash can be previewed.
+        if DemoMode.isOn {
+            if prefs.showFlash { flash.show(live: monitor.state != .live) }
+            return
+        }
         let old = monitor.state
         guard zoom.toggle() else { return }
-        monitor.refreshAfterToggle(from: old) { _ in }
+        // Flash what Zoom actually reports after the press, never an assumed result.
+        monitor.refreshAfterToggle(from: old) { [weak self] new in
+            guard let self, prefs.showFlash else { return }
+            flash.show(live: new == .live)
+        }
     }
 
     func requestAccessibility() {
