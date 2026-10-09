@@ -87,7 +87,7 @@ Overlay panels: borderless, non-activating, `.statusBar` level, `collectionBehav
 - **Muted:** hairline capsule outline in label color, "OFF AIR" in secondary color, unlit dot.
 - **No meeting / Zoom closed:** template `mic` SF Symbol, dimmed.
 - **No permission:** `exclamationmark.triangle.fill` in system yellow.
-- Content and color crossfade with `.snappy`; the status item's width snaps to fit the new content.
+- Each state is a plain image in the standard status-item button (template image for the monochrome states, so macOS tints it for light/dark menu bars); macOS sizes the item. No animation in the menu bar.
 
 **Menu:**
 ```

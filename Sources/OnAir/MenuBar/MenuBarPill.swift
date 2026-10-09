@@ -1,44 +1,62 @@
+import AppKit
 import OnAirCore
 import SwiftUI
 
-/// What sits in the menu bar, animated between states.
-struct MenuBarPill: View {
-    let monitor: StatusMonitor
+/// The status item's image for each state. It's a plain image in the standard status bar button, so macOS
+/// sizes, highlights and (for template images) tints it like any other menu bar icon. (A SwiftUI view layered on
+/// the button instead needed click pass-through and hand-measured widths, which went wrong.)
+@MainActor
+enum MenuBarIcon {
+    static func image(for state: MicState) -> NSImage? {
+        switch state {
+        case .live:
+            return render(MenuBarSign(live: true), template: false)  // full color: the lit red sign
+        case .muted:
+            return render(MenuBarSign(live: false), template: true)  // monochrome: macOS tints it for light/dark bars
+        case .noMeeting, .notRunning:
+            let mic = NSImage(systemSymbolName: "mic", accessibilityDescription: nil)?
+                .withSymbolConfiguration(.init(pointSize: 14, weight: .medium))
+            mic?.isTemplate = true
+            return mic
+        case .noPermission:
+            return NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: nil)?
+                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+                    .applying(.init(paletteColors: [.systemYellow])))
+        }
+    }
 
-    var body: some View {
-        MenuBarPillContent(state: monitor.state).animation(.snappy, value: monitor.state)
+    private static func render(_ view: some View, template: Bool) -> NSImage? {
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
+        let image = renderer.nsImage
+        image?.isTemplate = template
+        return image
     }
 }
 
-/// One state's look. Live is a lit red capsule; muted is a quiet outline; otherwise a plain mic glyph.
-/// Separate from `MenuBarPill` so the status item can measure a state on its own (see `MenuBarController.update`).
-struct MenuBarPillContent: View {
-    let state: MicState
-    @Environment(\.colorSchemeContrast) private var contrast
+/// ON AIR / OFF AIR at menu bar size. The OFF AIR version is drawn in black because it's used as a template
+/// image — only its shape matters, and macOS supplies the color.
+private struct MenuBarSign: View {
+    let live: Bool
 
     var body: some View {
-        switch state {
-        case .live:
-            SignLabel(live: true, size: 9.5)
-                .padding(.horizontal, 8)
-                .frame(height: 18)
-                .background(Capsule().fill(Theme.signalGradient))
-                // A faint top highlight makes the fill read as lit glass rather than flat paint.
-                .overlay(Capsule().strokeBorder(LinearGradient(colors: [.white.opacity(0.25), .clear], startPoint: .top, endPoint: .center), lineWidth: 1))
-                .overlay(Capsule().strokeBorder(.white.opacity(contrast == .increased ? 0.9 : 0), lineWidth: 1))
-        case .muted:
-            SignLabel(live: false, size: 9.5)
-                .padding(.horizontal, 8)
-                .frame(height: 18)
-                .overlay(Capsule().strokeBorder(.primary.opacity(contrast == .increased ? 1 : 0.45), lineWidth: 1))
-        case .noMeeting, .notRunning:
-            Image(systemName: "mic")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.secondary)
-        case .noPermission:
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(.yellow)
+        HStack(spacing: 4) {
+            Circle()
+                .fill(live ? Color.white : Color.clear)
+                .overlay(Circle().strokeBorder(live ? Color.clear : Color.black, lineWidth: 1))
+                .frame(width: 6, height: 6)
+            Text(live ? "ON AIR" : "OFF AIR")
+                .font(Theme.signFont(size: 9.5))
+                .tracking(Theme.signTracking(size: 9.5))
+                .foregroundStyle(live ? Color.white : Color.black)
         }
+        .padding(.horizontal, 8)
+        .frame(height: 18)
+        .background(Capsule().fill(live ? AnyShapeStyle(Theme.signalGradient) : AnyShapeStyle(Color.clear)))
+        // Live: a faint top highlight so the fill reads as lit glass. Muted: the outline is the whole shape.
+        .overlay(Capsule().strokeBorder(
+            live ? AnyShapeStyle(LinearGradient(colors: [.white.opacity(0.25), .clear], startPoint: .top, endPoint: .center))
+                 : AnyShapeStyle(Color.black.opacity(0.6)),
+            lineWidth: 1))
     }
 }
