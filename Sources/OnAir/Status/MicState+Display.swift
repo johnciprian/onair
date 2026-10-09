@@ -1,6 +1,7 @@
 import OnAirCore
 
 extension MicState {
+    /// Spoken by VoiceOver for the menu bar item.
     var menuTitle: String {
         switch self {
         case .live: "On Air — your mic is live"
@@ -11,23 +12,22 @@ extension MicState {
         }
     }
 
-    /// The line under the big status sign in the menu bar panel.
-    var panelSubtitle: String {
+    /// The status row at the top of the menu.
+    var statusTitle: String {
         switch self {
-        case .live: "Your mic is live"
-        case .muted: "You're muted"
-        case .noMeeting: "Not in a meeting"
-        case .notRunning: "Zoom isn't open"
-        case .noPermission: "OnAir needs Accessibility access to read Zoom"
+        case .live: "Microphone Live"
+        case .muted: "Microphone Muted"
+        case .noMeeting: "Not in a Meeting"
+        case .notRunning: "Zoom Isn't Open"
+        case .noPermission: "Needs Accessibility Access"
         }
     }
 
-    var menuSymbol: String {
+    var statusDetail: String {
         switch self {
-        case .live: "mic.fill"
-        case .muted: "mic.slash.fill"
-        case .noMeeting, .notRunning: "mic"
-        case .noPermission: "exclamationmark.triangle"
+        case .live, .muted, .noMeeting: "Zoom"
+        case .notRunning: "Open Zoom to see your mic status"
+        case .noPermission: "OnAir can't read Zoom yet"
         }
     }
 }

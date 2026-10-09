@@ -10,6 +10,7 @@ final class StatusMonitor {
     @ObservationIgnored var onChange: ((MicState) -> Void)?
     @ObservationIgnored private let read: () -> MicState?
     @ObservationIgnored private var sticky = StickyState(.notRunning)
+    @ObservationIgnored private var optimistic = OptimisticState()
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private let log = Logger(subsystem: "com.johnciprian.OnAir", category: "state")
 
@@ -27,23 +28,20 @@ final class StatusMonitor {
     }
 
     func refresh() {
-        let new = sticky.update(with: read())
+        let reading = sticky.update(with: read())
+        show(optimistic.resolve(reading: reading, at: ProcessInfo.processInfo.systemUptime))
+    }
+
+    /// Shows `target` right away after a successful press; Zoom's lagging menu confirms it on later polls.
+    func expect(_ target: MicState) {
+        optimistic.expect(target, from: state, at: ProcessInfo.processInfo.systemUptime)
+        show(target)
+    }
+
+    private func show(_ new: MicState) {
         guard new != state else { return }
         log.info("state \(String(describing: self.state), privacy: .public) → \(String(describing: new), privacy: .public)")
         state = new
         onChange?(new)
-    }
-
-    /// Zoom updates its menu a beat after the press, so re-read every 50 ms until the state moves.
-    func refreshAfterToggle(from old: MicState, attemptsLeft: Int = 6, completion: @escaping (MicState) -> Void) {
-        refresh()
-        if state != old { completion(state); return }
-        guard attemptsLeft > 1 else {
-            log.info("no state change seen after toggle; Zoom still reports \(String(describing: self.state), privacy: .public)")
-            return
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-            self?.refreshAfterToggle(from: old, attemptsLeft: attemptsLeft - 1, completion: completion)
-        }
     }
 }

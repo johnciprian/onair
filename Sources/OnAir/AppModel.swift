@@ -59,6 +59,20 @@ final class AppModel {
         prefs.hotkey.map(zoom.shortcutConflicts) ?? false
     }
 
+    /// Why the hotkey won't work, if it won't — shown in Settings instead of failing silently.
+    var hotkeyProblem: String? {
+        guard prefs.hotkey != nil else { return nil }
+        if !hotkeyAvailable { return "Another app already uses this shortcut. Choose a different one." }
+        if hotkeyConflictsWithZoom { return "Zoom uses this shortcut too, so it gets the key first. Change it in Zoom → Settings → Keyboard Shortcuts." }
+        return nil
+    }
+
+    /// The menu's Mute / Unmute item.
+    func toggleMute() {
+        guard monitor.state.isInMeeting else { return }
+        setZoom(muted: monitor.state == .live)
+    }
+
     func registerHotkey() {
         press.cancel()  // a press of the old combo will never see its release
         guard let combo = prefs.hotkey else {
@@ -97,16 +111,13 @@ final class AppModel {
             if prefs.showFlash { flash.show(live: !muted) }
             return
         }
-        let old = monitor.state
-        // Look for the change even if the press reports failure: an AX timeout can still take effect.
-        // If Zoom was already in the target state nothing changes and nothing flashes.
         let pressed = zoom.set(muted: muted)
         log.info("asked Zoom for muted=\(muted, privacy: .public), press succeeded=\(pressed, privacy: .public)")
-        // Flash what Zoom actually reports after the press, never an assumed result.
-        monitor.refreshAfterToggle(from: old) { [weak self] new in
-            guard let self, prefs.showFlash else { return }
-            flash.show(live: new == .live)
-        }
+        // Zoom's menu takes up to ~1.3 s to reflect the press; show the requested state now and let polling
+        // confirm it (or put Zoom's real state back if it never does — see OptimisticState).
+        guard pressed else { return }
+        monitor.expect(muted ? .muted : .live)
+        if prefs.showFlash { flash.show(live: !muted) }
     }
 
     func requestAccessibility() {

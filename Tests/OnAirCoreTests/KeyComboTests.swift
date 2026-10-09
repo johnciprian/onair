@@ -63,6 +63,28 @@ final class KeyComboTests: XCTestCase {
         XCTAssertEqual(KeyCombo.label(forKeyCode: 200, characters: nil), "Key 200")
     }
 
+    /// Menus show a shortcut natively from a key equivalent; for the user's ⌃⌥⇧⌘F10 that's the F10 function-key character.
+    func testMenuKeyEquivalentForFunctionKey() {
+        let combo = KeyCombo(keyCode: UInt16(kVK_F10), modifierFlags: [.control, .option, .shift, .command], characters: nil)
+        XCTAssertEqual(combo?.menuKeyEquivalent, String(UnicodeScalar(NSF10FunctionKey)!))
+    }
+
+    func testMenuKeyEquivalentForLetterIsLowercase() {
+        let combo = KeyCombo(keyCode: UInt16(kVK_ANSI_M), modifierFlags: [.control, .option], characters: "m")
+        XCTAssertEqual(combo?.menuKeyEquivalent, "m")
+    }
+
+    func testMenuKeyEquivalentForSpecialKeys() {
+        XCTAssertEqual(KeyCombo(keyCode: UInt16(kVK_Space), modifierFlags: [.control], characters: " ")?.menuKeyEquivalent, " ")
+        XCTAssertEqual(KeyCombo(keyCode: UInt16(kVK_LeftArrow), modifierFlags: [.control], characters: nil)?.menuKeyEquivalent,
+                       String(UnicodeScalar(NSLeftArrowFunctionKey)!))
+    }
+
+    /// A key we can't name (label like "Key 200") has no menu form; the menu then shows no shortcut rather than a wrong one.
+    func testMenuKeyEquivalentIsNilForUnknownKeys() {
+        XCTAssertNil(KeyCombo(keyCode: 200, modifierFlags: [.control], characters: nil)?.menuKeyEquivalent)
+    }
+
     func testCodableRoundTrip() throws {
         let combo = try XCTUnwrap(KeyCombo(keyCode: UInt16(kVK_ANSI_M), modifierFlags: [.control, .option], characters: "m"))
         let decoded = try JSONDecoder().decode(KeyCombo.self, from: JSONEncoder().encode(combo))

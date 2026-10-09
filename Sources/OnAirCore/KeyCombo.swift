@@ -46,6 +46,33 @@ public struct KeyCombo: Codable, Equatable, Sendable {
         return UInt32(result)
     }
 
+    static let menuKeyCharacters: [Int: Int] = {
+        let fKeys = [kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6, kVK_F7, kVK_F8, kVK_F9, kVK_F10,
+                     kVK_F11, kVK_F12, kVK_F13, kVK_F14, kVK_F15, kVK_F16, kVK_F17, kVK_F18, kVK_F19, kVK_F20]
+        var map = Dictionary(uniqueKeysWithValues: fKeys.enumerated().map { ($1, NSF1FunctionKey + $0) })
+        map[kVK_Space] = 0x20
+        map[kVK_Return] = 0x0D
+        map[kVK_Tab] = 0x09
+        map[kVK_Delete] = 0x08
+        map[kVK_ForwardDelete] = NSDeleteFunctionKey
+        map[kVK_LeftArrow] = NSLeftArrowFunctionKey
+        map[kVK_RightArrow] = NSRightArrowFunctionKey
+        map[kVK_UpArrow] = NSUpArrowFunctionKey
+        map[kVK_DownArrow] = NSDownArrowFunctionKey
+        map[kVK_Home] = NSHomeFunctionKey
+        map[kVK_End] = NSEndFunctionKey
+        map[kVK_PageUp] = NSPageUpFunctionKey
+        map[kVK_PageDown] = NSPageDownFunctionKey
+        return map
+    }()
+
+    /// The character `NSMenuItem.keyEquivalent` needs so a menu can show this shortcut natively,
+    /// or nil for a key with no menu form (the menu then shows no shortcut rather than a wrong one).
+    public var menuKeyEquivalent: String? {
+        if let code = Self.menuKeyCharacters[Int(keyCode)], let scalar = UnicodeScalar(code) { return String(scalar) }
+        return keyLabel.count == 1 ? keyLabel.lowercased() : nil
+    }
+
     public var keycaps: [String] { Self.symbols(for: modifierFlags) + [keyLabel] }
 
     public var displayString: String { keycaps.joined() }

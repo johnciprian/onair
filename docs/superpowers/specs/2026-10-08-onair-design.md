@@ -47,7 +47,7 @@ The displayed state always comes from reading Zoom, never from assuming the resu
 
 ### Polling
 - One 0.5 s timer (0.1 s tolerance). While Zoom is closed each tick is only a running-apps lookup — no Accessibility calls.
-- After each hotkey toggle, re-read immediately and keep re-reading every 50 ms (up to 6 tries) until Zoom's menu reflects the change; the toggle flash shows the state that was read.
+- After a hotkey press that Zoom accepts, show the requested state immediately (pill, badge, glow, flash): Zoom's menu takes 0.2–1.3 s to reflect a press (measured). Stale readings are hidden until Zoom confirms; if it hasn't within 2.5 s, Zoom's own state is shown again.
 - Accessibility calls to Zoom time out after 0.25 s so a hung Zoom can't freeze OnAir.
 
 ## 3. Architecture
@@ -89,21 +89,22 @@ Overlay panels: borderless, non-activating, `.statusBar` level, `collectionBehav
 - **No permission:** `exclamationmark.triangle.fill` in system yellow.
 - Each state is a plain image in the standard status-item button (template image for the monochrome states, so macOS tints it for light/dark menu bars); macOS sizes the item. No animation in the menu bar.
 
-**Menu:**
+**Menu:** a standard NSMenu (Apple HIG: menu bar extras show a menu, not a popover), chosen from the menu bar design study:
 ```
-● ON AIR                     (status, disabled)
+● Microphone Live            (custom status row: light + state + "Zoom")
+  Allow Accessibility Access…  (only when missing)
+  🎙 Mute               ⌃⌥⇧⌘F10  (Unmute when muted; disabled outside a meeting; hotkey as native key equivalent)
 ─────────────
-  Floating Badge             (checkmark toggle)
-  Screen-Edge Glow           (checkmark toggle)
-  Toggle Flash               (checkmark toggle)
+Show On Screen                (section header)
+✓ Floating Badge
+✓ Screen-Edge Glow
+  Toggle Flash
 ─────────────
-  Hotkey: ⌃⌥M  Change…
-  Launch at Login            (checkmark toggle)
-  Grant Accessibility Access…  (only when missing)
+  Settings…                ⌘,
 ─────────────
-  Quit OnAir
+  Quit OnAir               ⌘Q
 ```
-No hotkey recorded yet → "Hotkey: Not Set — Record…". Registration failure → "Hotkey Unavailable — Choose Another…".
+**Settings window** (standard titled window, grouped form): Hotkey (the shortcut itself is the button to re-record; red note when another app or Zoom uses it), Launch at Login, Accessibility status with Allow….
 
 ### 4.2 Floating badge (optional, off by default)
 - Visible only in `muted` and `live`.
