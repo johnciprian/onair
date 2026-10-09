@@ -1,13 +1,14 @@
 # Architecture
 
-OnAir is a Swift package with two targets and no third-party dependencies:
+OnAir is a Swift package with two targets and one third-party dependency, [Sparkle](https://sparkle-project.org)
+for updates:
 
 - **`OnAirCore`** (library): pure logic, with no AppKit, no Accessibility, no timers. Fully unit tested in
   `Tests/OnAirCoreTests`.
 - **`OnAir`** (executable): the app. It talks to Zoom and the system, and draws everything.
 
-`scripts/build.sh` wraps the executable in an `.app` bundle (Info.plist, icon compiled with `actool`), signs it,
-and optionally installs or zips it.
+`scripts/build.sh` wraps the executable in an `.app` bundle (Info.plist, icon compiled with `actool`, Sparkle in
+`Contents/Frameworks`), signs it, and optionally installs or zips it. `scripts/release.sh` publishes a version.
 
 ## The state
 
@@ -83,6 +84,16 @@ mute item in Zoom's **Meeting** menu through the Accessibility API, and presses 
 | `Overlays/FlashWindow.swift` | The center-screen confirmation on each muted ↔ live change. |
 | `Overlays/OverlayPanel.swift` | The shared panel setup for all three overlays. |
 
+### Updates: `Updates/Updater.swift`
+
+Sparkle's standard updater checks once a day for `appcast.xml`, the feed attached to the latest GitHub release
+(`SUFeedURL` in `Info.plist`). Every update zip is signed with an EdDSA key; the public half is `SUPublicEDKey`
+in `Info.plist`, so a copy of OnAir only installs updates signed with the project's private key.
+
+OnAir has no Dock icon, so an update window from a background check opens behind other apps. Following Sparkle's
+"gentle reminders" guidance, `Updater` also changes the menu's **Check for Updates…** item to
+**Update Available…** until the user has looked at the update.
+
 ## Design decisions
 
 - **Standard components wherever possible.** The status item uses a plain image, the menu is a real `NSMenu`,
@@ -98,8 +109,12 @@ mute item in Zoom's **Meeting** menu through the Accessibility API, and presses 
   from Zoom, except for the short, bounded optimistic window after OnAir's own press.
 - **No sandbox, no App Store.** The App Sandbox doesn't allow controlling another app through Accessibility,
   which is the core of how OnAir works.
-- **Signing matters for Accessibility.** macOS ties the permission to the code signature, so the build script
-  signs with a stable identity when one is available.
+- **Signing matters for Accessibility.** macOS ties the permission to the code signature, so every build is
+  signed with the same identity, and the permission survives updates. Releases use a self-signed certificate,
+  "OnAir Release Signing", rather than an Apple Development certificate, whose name contains its owner's email
+  and would be readable from every download. A self-signed certificate has no Team ID, so library validation
+  would refuse to load Sparkle. `Resources/OnAir.entitlements` turns that one check off; the rest of the
+  hardened runtime stays on.
 
 ## Demo mode
 

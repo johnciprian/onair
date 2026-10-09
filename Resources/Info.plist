@@ -28,5 +28,11 @@
 	<true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/johnciprian/onair/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>DWFz/bkLZxvAY3N490KSGWzJPezXafeLYxagzgDEAlY=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 </dict>
 </plist>

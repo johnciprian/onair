@@ -62,6 +62,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         menu.addItem(item("Settings…", #selector(openSettings), key: ","))
+        menu.addItem(item(app.updater.hasUnseenUpdate ? "Update Available…" : "Check for Updates…", #selector(checkForUpdates)))
         menu.addItem(.separator())
         let quit = NSMenuItem(title: "Quit OnAir", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
@@ -96,6 +97,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     @objc private func toggleFlash() { app.prefs.showFlash.toggle() }
     @objc private func grantAccess() { app.requestAccessibility() }
     @objc private func openSettings() { settings.show() }
+    @objc private func checkForUpdates() { app.updater.checkForUpdates() }
 }
 
 /// The one custom row: a status light, the state in words, and where it comes from.

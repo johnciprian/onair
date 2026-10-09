@@ -24,7 +24,9 @@ microphone is live, and gives you one hotkey to mute, unmute, and push-to-talk.
     whether you used OnAir or Zoom itself.
 - **Instant feedback.** Zoom takes up to ~1.3 s to update after a mute; OnAir shows the new state immediately and
   then confirms it with Zoom.
-- **Native and private.** Built with SwiftUI and AppKit, no dependencies, no network access, no analytics.
+- **Updates itself.** OnAir checks for new versions once a day and installs them with one click.
+- **Native and private.** Built with SwiftUI and AppKit. No analytics, and the only network request is the
+  daily update check.
 
 ## Requirements
 
@@ -33,9 +35,21 @@ microphone is live, and gives you one hotkey to mute, unmute, and push-to-talk.
 
 ## Install
 
+### Download
+
+1. Download `OnAir-<version>.zip` from the [latest release](https://github.com/johnciprian/onair/releases/latest)
+   and double-click it to unzip.
+2. Drag **OnAir** into your **Applications** folder.
+3. Open it. macOS will say it can't check OnAir for malware and offer only **Done** or **Move to Trash**: click
+   **Done**. (OnAir isn't notarized by Apple; that needs a paid developer membership.)
+4. Open **System Settings → Privacy & Security**, scroll down to **Security**, and click **Open Anyway** next to
+   "OnAir was blocked". Confirm with your password, then click **Open**.
+
+You only do this once. Later versions arrive through OnAir's own updater and open normally.
+
 ### Build from source
 
-You need Xcode 26 (or its command line tools).
+You need Xcode 26.
 
 ```bash
 git clone https://github.com/johnciprian/onair.git
@@ -69,6 +83,7 @@ Click the menu bar sign to open the menu:
 | **Mute / Unmute** | Toggles Zoom's mic. Shows your hotkey; disabled outside a meeting. |
 | **Show On Screen** | Turns the floating badge, screen-edge glow, and toggle flash on or off. |
 | **Settings…** (⌘,) | Change the hotkey, launch at login, and check Accessibility access. |
+| **Check for Updates…** | Looks for a new version now. Reads **Update Available…** when a daily check found one. |
 | **Quit OnAir** (⌘Q) | Quits. |
 
 ## How it works
@@ -84,9 +99,13 @@ More detail, including the design decisions behind the code, is in [docs/ARCHITE
 
 ## Privacy
 
-OnAir never listens to your microphone. It only reads the title of one menu item in Zoom. It makes no network
-connections and stores nothing but your preferences (in `UserDefaults`). The badge, glow and flash are excluded
-from screen sharing and screenshots where macOS allows it.
+OnAir never listens to your microphone. It only reads the title of one menu item in Zoom, and stores nothing but
+your preferences (in `UserDefaults`). The badge, glow and flash are excluded from screen sharing and screenshots
+where macOS allows it.
+
+Its only network request is the update check: once a day it downloads the list of releases (`appcast.xml`)
+from this repository's GitHub releases. Updates are made with [Sparkle](https://sparkle-project.org), and each
+one is cryptographically signed, so OnAir only installs updates that come from this project.
 
 ## Limitations
 
@@ -118,6 +137,7 @@ swift test                                   # unit tests for OnAirCore
 scripts/build.sh                             # build build/OnAir.app
 scripts/build.sh install                     # build, copy to /Applications, relaunch
 scripts/build.sh release                     # build and zip build/OnAir-<version>.zip
+scripts/release.sh                           # publish a new version (see Releasing)
 open --env ONAIR_DEMO=1 build/OnAir.app      # demo mode: cycles states every 3 s, no Zoom needed
 swift scripts/make-icon.swift                # re-render the icon's layers
 ```
@@ -131,18 +151,23 @@ tools can see everything.
 
 ### Signing
 
-Accessibility permission is tied to the code signature. `scripts/build.sh` signs with your **Apple Development**
-certificate if you have one (Xcode → Settings → Accounts → Manage Certificates → + → Apple Development; it's
-free), so the permission survives rebuilds. Without one, builds are ad-hoc signed and you'll have to allow
-Accessibility again after every build.
+Accessibility permission is tied to the app's code signature, so `scripts/build.sh` signs every build with the
+same identity, letting the permission survive rebuilds and updates. It uses the first of these it finds:
 
-### Sharing a build
+1. **OnAir Release Signing**, the project's self-signed certificate for releases (only the maintainer has it).
+2. Your **Apple Development** certificate (Xcode → Settings → Accounts → Manage Certificates → + → Apple
+   Development; it's free).
+3. Ad-hoc signing. You'll have to allow Accessibility again after every build.
 
-`scripts/build.sh release` produces a zip, but a build signed with a development certificate is blocked by
-Gatekeeper on other Macs (they can still open it via **System Settings → Privacy & Security → Open Anyway**).
-To ship a build that opens normally, sign it with a **Developer ID Application** certificate (Apple Developer
-Program) and notarize it with `xcrun notarytool`. The build already uses the hardened runtime that
-notarization requires.
+### Releasing
+
+1. Raise `CFBundleShortVersionString` (e.g. `1.1`) and `CFBundleVersion` (a whole number that only goes up) in
+   `Resources/Info.plist`, then commit and push.
+2. Run `scripts/release.sh`. It builds and zips the app, signs the zip with the Sparkle update key, writes
+   `appcast.xml`, and publishes both as a GitHub release. Installed copies find it on their next check.
+
+The update key lives in the maintainer's login Keychain, with a backup in 1Password. Without it, existing
+installs can't be sent updates.
 
 ## Roadmap
 
@@ -155,3 +180,6 @@ product or service whose value comes substantially from it. See [LICENSE](LICENS
 [Commons Clause](https://commonsclause.com) condition.
 
 Because of that condition, OnAir is *source-available* rather than open source in the OSI sense.
+
+OnAir includes [Sparkle](https://github.com/sparkle-project/Sparkle), which is under the MIT License; its license
+ships inside the app as `Sparkle-LICENSE.txt`.

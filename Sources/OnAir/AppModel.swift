@@ -18,6 +18,7 @@ final class AppModel {
     /// The state when the current key press began. A hold returns Zoom to exactly this rather than toggling
     /// whatever is showing, so a failed or slow press can't leave the mic live after push-to-talk.
     private var stateAtPress = MicState.noMeeting
+    let updater = Updater()
     private let recorder = HotkeyRecorder()
     private let flash = FlashWindow()
     /// A pending re-press while Zoom's menu catches up (see `press(muted:until:)`).
