@@ -10,6 +10,11 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$(swift build -c release --show-bin-path)/OnAir" "$APP/Contents/MacOS/OnAir"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
+# Compile the Icon Composer icon into Assets.car (+ AppIcon.icns for older consumers).
+xcrun actool Resources/AppIcon.icon --compile "$APP/Contents/Resources" --platform macosx \
+    --minimum-deployment-target 26.0 --app-icon AppIcon \
+    --output-partial-info-plist build/AppIcon-partial.plist > /dev/null
+
 # Accessibility permission is tied to the signature: an Apple Development identity keeps it across
 # rebuilds; ad-hoc ("-") signing means re-granting it after every build.
 IDENTITY=$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ { print $2; exit }')

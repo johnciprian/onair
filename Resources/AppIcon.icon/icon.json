@@ -1,0 +1,16 @@
+{
+  "fill" : {
+    "solid" : "srgb:0.11000,0.11000,0.13000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [ { "image-name" : "letters.png", "name" : "letters" } ]
+    },
+    {
+      "layers" : [ { "image-name" : "plate.png", "name" : "plate" } ]
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [ "macOS" ]
+  }
+}
