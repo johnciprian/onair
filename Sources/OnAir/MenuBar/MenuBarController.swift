@@ -77,7 +77,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         menu.addItem(item("Settings…", #selector(openSettings), symbol: "gearshape", key: ","))
         menu.addItem(.separator())
         let quit = NSMenuItem(title: "Quit OnAir", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        quit.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
+        setIcon(quit, "power")
         menu.addItem(quit)
     }
 
@@ -89,7 +89,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     /// "Mute" or "Unmute" depending on the state, with the hotkey shown the native way at the trailing edge.
     private func configureMute(_ item: NSMenuItem, for state: MicState) {
         item.title = state == .muted ? "Unmute" : "Mute"
-        item.image = NSImage(systemSymbolName: state == .muted ? "mic" : "mic.slash", accessibilityDescription: nil)
+        setIcon(item, state == .muted ? "mic" : "mic.slash")
         item.isEnabled = state.isInMeeting
         if let combo = app.prefs.hotkey, let key = combo.menuKeyEquivalent {
             item.keyEquivalent = key
@@ -100,8 +100,14 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     private func item(_ title: String, _ action: Selector, symbol: String? = nil, key: String = "") -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
         item.target = self
-        item.image = symbol.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
+        if let symbol { setIcon(item, symbol) }
         return item
+    }
+
+    /// macOS 27 hides menu item icons unless an item asks for its icon to stay visible.
+    private func setIcon(_ item: NSMenuItem, _ symbol: String) {
+        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        if #available(macOS 27, *) { item.preferredImageVisibility = .visible }
     }
 
     private func switchItem(_ title: String, isOn: Bool, set: @escaping (Bool) -> Void) -> NSMenuItem {
@@ -166,15 +172,33 @@ struct SwitchRow: View {
                 .accessibilityHidden(true)  // the switch carries the same label for VoiceOver
             Spacer(minLength: 12)
             Toggle(title, isOn: $isOn)
-                .toggleStyle(.switch)
-                .controlSize(.mini)
+                .toggleStyle(MenuSwitchStyle())
                 .labelsHidden()
         }
-        .padding(.leading, 16)  // lines the name up with the regular items' titles
+        .padding(.leading, 36)  // lines the name up with the other items' titles, after their icons
         .padding(.trailing, 14)
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture { isOn.toggle() }  // clicking the name works too
         .onChange(of: isOn) { _, on in set(on) }
+    }
+}
+
+/// A switch drawn in the system switch's shape and size. A menu is never the key window, so the system switch
+/// always draws in its grey inactive style there (SwiftUI's active-state overrides don't reach it); this one
+/// shows the accent color when on, like the switches in Control Center.
+private struct MenuSwitchStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Capsule()
+            .fill(configuration.isOn ? Color.accentColor : Color.primary.opacity(0.15))
+            .frame(width: 32, height: 18)
+            .overlay(alignment: configuration.isOn ? .trailing : .leading) {
+                Circle()
+                    .fill(.white)
+                    .shadow(color: .black.opacity(0.25), radius: 0.5, y: 0.5)
+                    .padding(2)
+            }
+            .animation(.snappy(duration: 0.15), value: configuration.isOn)
+            .onTapGesture { configuration.isOn.toggle() }
     }
 }
