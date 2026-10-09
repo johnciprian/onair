@@ -46,7 +46,6 @@ struct RecorderView: View {
         }
         .padding(24)
         .frame(width: 360)
-        .background(WindowDragArea())
     }
 }
 
@@ -54,29 +53,27 @@ struct RecorderView: View {
 @MainActor
 final class HotkeyRecorder {
     private let model = RecorderModel()
-    private var panel: NSPanel?
+    private var window: NSWindow?
     private var keyMonitor: Any?
     private var completion: ((KeyCombo?) -> Void)?
 
     func show(current: KeyCombo?, completion: @escaping (KeyCombo?) -> Void) {
-        if let panel { panel.makeKeyAndOrderFront(nil); return }
+        if let window { UtilityWindow.present(window); return }
         self.completion = completion
         model.combo = current
         model.held = []
         model.rejected = false
-        let panel = GlassWindow.make(content: RecorderView(
+        let window = UtilityWindow.make(content: RecorderView(
             model: model,
             onSave: { [weak self] in self?.finish(self?.model.combo) },
             onCancel: { [weak self] in self?.finish(nil) }
-        ), cornerRadius: 28)
-        self.panel = panel
+        ))
+        self.window = window
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             MainActor.assumeIsolated { self?.handle(event) }
             return nil
         }
-        NSApp.activate()
-        panel.center()
-        panel.makeKeyAndOrderFront(nil)
+        UtilityWindow.present(window)
     }
 
     private func handle(_ event: NSEvent) {
@@ -97,8 +94,8 @@ final class HotkeyRecorder {
     private func finish(_ combo: KeyCombo?) {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
-        panel?.orderOut(nil)
-        panel = nil
+        window?.orderOut(nil)
+        window = nil
         let completion = self.completion
         self.completion = nil
         completion?(combo)

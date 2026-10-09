@@ -127,7 +127,7 @@ No hotkey recorded yet → "Hotkey: Not Set — Record…". Registration failure
 - A new toggle while visible updates it in place (symbol `.replace` transition) and restarts the timer.
 
 ### 4.5 Hotkey recorder window
-- Small glass window (~360 × 180 pt), centered, titled "Set Hotkey".
+- Small standard window (~360 × 180 pt) with a hidden title bar, centered, headed "Set Hotkey". macOS draws its corners, shadow and active/inactive look (chosen over custom borderless glass panels, which drew a rectangular box while active).
 - Shows the current combo as glass keycaps (one cap per modifier and key, e.g. ⌃ ⌥ M).
 - "Press your shortcut…" placeholder; caps animate in as keys are pressed; Esc cancels; Save / Cancel buttons.
 - Requires ⌃ or ⌘ (bare keys, ⇧+key and ⌥+key would hijack typing) unless the key is F13–F20.
@@ -136,7 +136,7 @@ No hotkey recorded yet → "Hotkey: Not Set — Record…". Registration failure
 A macOS-style squircle: a dark smoked-glass tile holding a lit red "ON AIR" sign plate with the sign typography and a soft bloom. Built in Icon Composer (layers: background, sign plate, lit text) so macOS can render its light/dark/tinted variants.
 
 ### 4.7 First run
-A single glass onboarding window with three steps, each with a checkmark when done:
+A single onboarding window (same standard hidden-title-bar style as the recorder) with three steps, each with a checkmark when done:
 1. Grant Accessibility access (button opens the System Settings pane; updates live once granted).
 2. Record your hotkey.
 3. "Remove this shortcut from Zoom → Settings → Keyboard Shortcuts so it isn't triggered twice." (instruction only)

@@ -85,7 +85,6 @@ struct OnboardingView: View {
             }
             .padding(28)
             .frame(width: 480)
-            .background(WindowDragArea())
         }
     }
 
@@ -100,7 +99,7 @@ struct OnboardingView: View {
 @MainActor
 final class OnboardingWindow {
     private unowned let app: AppModel
-    private var panel: NSPanel?
+    private var window: NSWindow?
     private var trustWatch: Timer?
 
     init(app: AppModel) {
@@ -108,31 +107,27 @@ final class OnboardingWindow {
     }
 
     func show() {
-        if panel == nil {
-            panel = GlassWindow.make(content: OnboardingView(
+        if window == nil {
+            window = UtilityWindow.make(content: OnboardingView(
                 prefs: app.prefs,
                 isHotkeyAvailable: { [unowned app] in app.hotkeyAvailable },
                 onAllow: { [weak self] in self?.allow() },
                 onRecord: { [unowned app] in app.recordHotkey() },
                 onDone: { [weak self] in self?.finish() }
-            ), cornerRadius: 32)
+            ))
         }
-        NSApp.activate()
-        panel?.center()
-        panel?.makeKeyAndOrderFront(nil)
+        if let window { UtilityWindow.present(window) }
     }
 
-    /// The system prompt and System Settings are ordinary windows, so step down to let them open in front
-    /// (Stage Manager may tuck this window aside), then come back on top once access is granted.
+    /// The system prompt and System Settings come to the front (Stage Manager may tuck this window aside);
+    /// bring it back once access is granted so the user sees step 1 tick.
     private func allow() {
-        panel?.level = .normal
         app.requestAccessibility()
         trustWatch?.invalidate()
         trustWatch = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
             MainActor.assumeIsolated {
                 guard AXIsProcessTrusted() else { return }
                 timer.invalidate()
-                self?.panel?.level = .floating
                 self?.show()
             }
         }
@@ -141,7 +136,7 @@ final class OnboardingWindow {
     private func finish() {
         trustWatch?.invalidate()
         app.prefs.hasCompletedOnboarding = true
-        panel?.orderOut(nil)
-        panel = nil
+        window?.orderOut(nil)
+        window = nil
     }
 }
