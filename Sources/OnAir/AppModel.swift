@@ -10,6 +10,7 @@ final class AppModel {
     private let zoom: ZoomController
     private var menuBar: MenuBarController?
     private var badge: BadgeWindow?
+    private var glow: GlowWindows?
     let hotkey = Hotkey()
     private(set) var hotkeyAvailable = true
     private var press = PressLogic()
@@ -26,6 +27,7 @@ final class AppModel {
         if DemoMode.isOn { NSApp.setActivationPolicy(.regular) }
         menuBar = MenuBarController(app: self)
         badge = BadgeWindow(monitor: monitor, prefs: prefs)
+        glow = GlowWindows(monitor: monitor)
         hotkey.onPress = { [weak self] in self?.keyDown() }
         hotkey.onRelease = { [weak self] in self?.keyUp() }
         registerHotkey()
@@ -36,6 +38,7 @@ final class AppModel {
     func render() {
         menuBar?.update()
         badge?.update(enabled: prefs.showBadge)
+        glow?.setEnabled(prefs.showGlow)
     }
 
     func registerHotkey() {
