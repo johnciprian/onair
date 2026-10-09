@@ -2,22 +2,35 @@ import AppKit
 import OnAirCore
 import SwiftUI
 
-/// A soft red glow diffusing in from the display edges — no hard line, no pulsing — calm but impossible to miss.
+/// A thin red rim hugging the display edges that slowly breathes while live, modelled on the glow
+/// macOS-style agents show while controlling the screen: contained, but impossible to miss.
 struct GlowView: View {
     let monitor: StatusMonitor
     let cornerRadius: CGFloat
+    @State private var dimmed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let live = monitor.state == .live
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         ZStack {
-            // A wide faint haze plus a tighter, brighter band at the edge; both blurred so nothing reads as a line.
-            shape.strokeBorder(Theme.signalRed.opacity(0.25), lineWidth: 40).blur(radius: 30)
-            shape.strokeBorder(Theme.signalRed.opacity(0.45), lineWidth: 10).blur(radius: 10)
+            // A short soft falloff (~25 pt) under a bright, barely blurred rim right at the edge.
+            shape.strokeBorder(Theme.signalRed.opacity(0.45), lineWidth: 10).blur(radius: 8)
+            shape.strokeBorder(Theme.signalRed.opacity(0.9), lineWidth: 3).blur(radius: 1.5)
         }
         .clipShape(shape)
+        .opacity(dimmed ? 0.45 : 1)
         .opacity(live ? 1 : 0)
         .animation(live ? .easeOut(duration: 0.25) : .easeIn(duration: 0.4), value: live)
+        .onChange(of: live, initial: true) { _, live in
+            // The breathing runs only while live (and not with Reduce Motion); a plain animation back to
+            // full strength replaces the repeating one, which stops it.
+            if live && !reduceMotion {
+                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { dimmed = true }
+            } else {
+                withAnimation(.easeOut(duration: 0.2)) { dimmed = false }
+            }
+        }
         .ignoresSafeArea()
         .allowsHitTesting(false)
     }

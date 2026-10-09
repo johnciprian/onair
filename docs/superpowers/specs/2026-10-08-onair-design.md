@@ -49,6 +49,8 @@ The displayed state always comes from reading Zoom, never from assuming the resu
 - One 0.5 s timer (0.1 s tolerance). While Zoom is closed each tick is only a running-apps lookup — no Accessibility calls.
 - After a hotkey press that Zoom accepts, show the requested state immediately (pill, badge, glow, flash): Zoom's menu takes 0.2–1.3 s to reflect a press (measured). Stale readings are hidden until Zoom confirms; if it hasn't within 2.5 s, Zoom's own state is shown again.
 - Accessibility calls to Zoom time out after 0.25 s so a hung Zoom can't freeze OnAir.
+- The toggle flash shows on every muted ↔ live change, whether it came from OnAir or from Zoom itself.
+- The edge glow is a thin red rim (~20 pt reach) that pulses slowly while live; no pulse with Reduce Motion.
 
 ## 3. Architecture
 
