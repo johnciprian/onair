@@ -52,6 +52,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         menu.addItem(item("Screen-Edge Glow", #selector(toggleGlow), on: app.prefs.showGlow))
         menu.addItem(item("Toggle Flash", #selector(toggleFlash), on: app.prefs.showFlash))
         menu.addItem(.separator())
+        menu.addItem(item(hotkeyTitle, #selector(recordHotkey)))
         menu.addItem(item("Launch at Login", #selector(toggleLogin), on: LoginItem.isEnabled))
         if state == .noPermission {
             menu.addItem(item("Grant Accessibility Access…", #selector(grantAccess)))
@@ -72,4 +73,11 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     @objc private func toggleFlash() { app.prefs.showFlash.toggle() }
     @objc private func toggleLogin() { LoginItem.isEnabled.toggle() }
     @objc private func grantAccess() { app.requestAccessibility() }
+
+    private var hotkeyTitle: String {
+        guard let combo = app.prefs.hotkey else { return "Hotkey: Not Set — Record…" }
+        return app.hotkeyAvailable ? "Hotkey: \(combo.displayString) — Change…" : "Hotkey Unavailable — Choose Another…"
+    }
+
+    @objc private func recordHotkey() { app.recordHotkey() }
 }

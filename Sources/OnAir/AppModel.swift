@@ -12,6 +12,7 @@ final class AppModel {
     let hotkey = Hotkey()
     private(set) var hotkeyAvailable = true
     private var press = PressLogic()
+    private let recorder = HotkeyRecorder()
 
     init() {
         let zoom = ZoomController()
@@ -41,6 +42,16 @@ final class AppModel {
             return
         }
         hotkeyAvailable = hotkey.register(combo)
+    }
+
+    func recordHotkey() {
+        // Carbon swallows a registered combo before any window sees it, so release ours while recording.
+        hotkey.unregister()
+        recorder.show(current: prefs.hotkey) { [weak self] combo in
+            guard let self else { return }
+            if let combo { prefs.hotkey = combo }
+            registerHotkey()
+        }
     }
 
     private func keyDown() {
