@@ -1,17 +1,23 @@
 import OnAirCore
 import SwiftUI
 
-/// What sits in the menu bar. Live is a lit red capsule; muted is a quiet outline; otherwise a plain mic glyph.
+/// What sits in the menu bar, animated between states.
 struct MenuBarPill: View {
     let monitor: StatusMonitor
+
+    var body: some View {
+        MenuBarPillContent(state: monitor.state).animation(.snappy, value: monitor.state)
+    }
+}
+
+/// One state's look. Live is a lit red capsule; muted is a quiet outline; otherwise a plain mic glyph.
+/// Separate from `MenuBarPill` so the status item can measure a state on its own (see `MenuBarController.update`).
+struct MenuBarPillContent: View {
+    let state: MicState
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        content.animation(.snappy, value: monitor.state)
-    }
-
-    @ViewBuilder private var content: some View {
-        switch monitor.state {
+        switch state {
         case .live:
             SignLabel(live: true, size: 9.5)
                 .padding(.horizontal, 8)

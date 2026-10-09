@@ -32,12 +32,12 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         update()
     }
 
-    /// Fits the status item to the pill. Deferred one run-loop turn so SwiftUI has rendered the new state first.
+    /// Fits the status item to the new state. Measured from the state on its own: mid-animation the live pill
+    /// still holds the outgoing view, so its size would be the wider of the two (a mic glyph in an ON AIR-wide slot).
     func update() {
-        DispatchQueue.main.async { [self] in
-            statusItem.length = pill.fittingSize.width + 6
-            statusItem.button?.setAccessibilityLabel("OnAir: \(app.monitor.state.menuTitle)")
-        }
+        let state = app.monitor.state
+        statusItem.length = NSHostingView(rootView: MenuBarPillContent(state: state)).fittingSize.width + 6
+        statusItem.button?.setAccessibilityLabel("OnAir: \(state.menuTitle)")
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
