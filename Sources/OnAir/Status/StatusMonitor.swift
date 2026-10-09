@@ -8,13 +8,15 @@ import os
 final class StatusMonitor {
     private(set) var state: MicState
     @ObservationIgnored var onChange: ((MicState) -> Void)?
-    @ObservationIgnored private let read: () -> MicState
+    @ObservationIgnored private let read: () -> MicState?
+    @ObservationIgnored private var sticky = StickyState(.notRunning)
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private let log = Logger(subsystem: "com.johnciprian.OnAir", category: "state")
 
-    init(read: @escaping () -> MicState) {
+    init(read: @escaping () -> MicState?) {
         self.read = read
-        state = read()
+        state = .notRunning
+        state = sticky.update(with: read())
         // Zoom doesn't announce mute changes, so poll. While Zoom is closed a tick is only a running-apps lookup.
         let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refresh() }
@@ -25,7 +27,7 @@ final class StatusMonitor {
     }
 
     func refresh() {
-        let new = read()
+        let new = sticky.update(with: read())
         guard new != state else { return }
         log.info("state \(String(describing: self.state), privacy: .public) → \(String(describing: new), privacy: .public)")
         state = new

@@ -20,10 +20,23 @@ final class ZoomMenuTests: XCTestCase {
         XCTAssertEqual(ZoomMenu.state(fromMeetingMenuTitles: []), .noMeeting)
     }
 
-    func testToggleTitlePicksTheVisibleItem() {
-        XCTAssertEqual(ZoomMenu.toggleTitle(in: ["Invite", "Unmute audio"]), "Unmute audio")
-        XCTAssertEqual(ZoomMenu.toggleTitle(in: ["Mute telephone", "Invite"]), "Mute telephone")
-        XCTAssertNil(ZoomMenu.toggleTitle(in: ["Invite"]))
+    func testPressTitleMutesWhenLive() {
+        XCTAssertEqual(ZoomMenu.pressTitle(toMute: true, in: ["Invite", "Mute audio"]), "Mute audio")
+        XCTAssertEqual(ZoomMenu.pressTitle(toMute: true, in: ["Mute telephone"]), "Mute telephone")
+    }
+
+    func testPressTitleUnmutesWhenMuted() {
+        XCTAssertEqual(ZoomMenu.pressTitle(toMute: false, in: ["Invite", "Unmute audio"]), "Unmute audio")
+    }
+
+    /// Release after a failed push-to-talk press must not unmute: Zoom is already muted, so there's nothing to press.
+    func testPressTitleIsNilWhenAlreadyInTargetState() {
+        XCTAssertNil(ZoomMenu.pressTitle(toMute: true, in: ["Unmute audio"]))
+        XCTAssertNil(ZoomMenu.pressTitle(toMute: false, in: ["Mute audio"]))
+    }
+
+    func testPressTitleIsNilOutsideAMeeting() {
+        XCTAssertNil(ZoomMenu.pressTitle(toMute: true, in: ["Invite"]))
     }
 
     func testIsInMeeting() {

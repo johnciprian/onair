@@ -10,8 +10,9 @@ public enum ZoomMenu {
         return .noMeeting
     }
 
-    /// The item to press to flip the mic, if Zoom is showing one.
-    public static func toggleTitle(in titles: [String]) -> String? {
-        titles.first { liveTitles.contains($0) || mutedTitles.contains($0) }
+    /// The item that moves the mic to the wanted state, or nil when it's already there (or there's no meeting).
+    /// Targeting a state instead of toggling means a failed or slow press can't leave the mic live after a hold.
+    public static func pressTitle(toMute mute: Bool, in titles: [String]) -> String? {
+        titles.first { (mute ? liveTitles : mutedTitles).contains($0) }
     }
 }

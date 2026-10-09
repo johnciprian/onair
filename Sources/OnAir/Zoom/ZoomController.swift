@@ -7,17 +7,18 @@ import OnAirCore
 final class ZoomController {
     static let bundleID = "us.zoom.xos"
 
-    func readState() -> MicState {
+    /// nil when Zoom didn't answer (busy or hung) — distinct from "no meeting", so the display can hold its last state.
+    func readState() -> MicState? {
         guard AXIsProcessTrusted() else { return .noPermission }
         guard let app = zoomApp() else { return .notRunning }
-        return ZoomMenu.state(fromMeetingMenuTitles: meetingMenuItems(of: app).map(\.title))
+        return meetingMenuItems(of: app).map { ZoomMenu.state(fromMeetingMenuTitles: $0.map(\.title)) }
     }
 
-    /// Presses whichever Mute/Unmute item Zoom is showing. Returns false outside a meeting.
-    func toggle() -> Bool {
-        guard let app = zoomApp() else { return false }
-        let items = meetingMenuItems(of: app)
-        guard let title = ZoomMenu.toggleTitle(in: items.map(\.title)),
+    /// Presses Mute or Unmute to reach `muted`. Returns false when Zoom is already there or not in a meeting.
+    func set(muted: Bool) -> Bool {
+        guard let app = zoomApp(),
+              let items = meetingMenuItems(of: app),
+              let title = ZoomMenu.pressTitle(toMute: muted, in: items.map(\.title)),
               let item = items.first(where: { $0.title == title })
         else { return false }
         return AXUIElementPerformAction(item.element, kAXPressAction as CFString) == .success
@@ -32,13 +33,16 @@ final class ZoomController {
         return app
     }
 
-    private func meetingMenuItems(of app: AXUIElement) -> [(title: String, element: AXUIElement)] {
+    /// nil when Zoom's menu bar couldn't be read; empty when there's no Meeting menu (not in a meeting).
+    private func meetingMenuItems(of app: AXUIElement) -> [(title: String, element: AXUIElement)]? {
         guard let menuBar: AXUIElement = attribute(app, kAXMenuBarAttribute),
-              let barItems: [AXUIElement] = attribute(menuBar, kAXChildrenAttribute),
-              let meeting = barItems.first(where: { (attribute($0, kAXTitleAttribute) as String?) == "Meeting" }),
-              let menu = (attribute(meeting, kAXChildrenAttribute) as [AXUIElement]?)?.first,
-              let items: [AXUIElement] = attribute(menu, kAXChildrenAttribute)
+              let barItems: [AXUIElement] = attribute(menuBar, kAXChildrenAttribute)
+        else { return nil }
+        guard let meeting = barItems.first(where: { (attribute($0, kAXTitleAttribute) as String?) == "Meeting" })
         else { return [] }
+        guard let menu = (attribute(meeting, kAXChildrenAttribute) as [AXUIElement]?)?.first,
+              let items: [AXUIElement] = attribute(menu, kAXChildrenAttribute)
+        else { return nil }
         return items.compactMap { item in (attribute(item, kAXTitleAttribute) as String?).map { ($0, item) } }
     }
 

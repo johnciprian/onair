@@ -14,6 +14,9 @@ final class AppModel {
     let hotkey = Hotkey()
     private(set) var hotkeyAvailable = true
     private var press = PressLogic()
+    /// The state when the current key press began. A hold returns Zoom to exactly this rather than toggling
+    /// whatever is showing, so a failed or slow press can't leave the mic live after push-to-talk.
+    private var stateAtPress = MicState.noMeeting
     private let recorder = HotkeyRecorder()
     private let flash = FlashWindow()
     private lazy var onboarding = OnboardingWindow(app: self)
@@ -21,7 +24,8 @@ final class AppModel {
     init() {
         let zoom = ZoomController()
         self.zoom = zoom
-        monitor = StatusMonitor(read: DemoMode.isOn ? DemoMode.read : zoom.readState)
+        let read: () -> MicState? = DemoMode.isOn ? DemoMode.read : zoom.readState
+        monitor = StatusMonitor(read: read)
     }
 
     func start() {
@@ -64,21 +68,24 @@ final class AppModel {
     }
 
     private func keyDown() {
-        if press.press(at: ProcessInfo.processInfo.systemUptime, inMeeting: monitor.state.isInMeeting) { toggleZoom() }
+        let state = monitor.state
+        guard press.press(at: ProcessInfo.processInfo.systemUptime, inMeeting: state.isInMeeting) else { return }
+        stateAtPress = state
+        setZoom(muted: state == .live)
     }
 
     private func keyUp() {
-        if press.release(at: ProcessInfo.processInfo.systemUptime) { toggleZoom() }
+        if press.release(at: ProcessInfo.processInfo.systemUptime) { setZoom(muted: stateAtPress == .muted) }
     }
 
-    private func toggleZoom() {
+    private func setZoom(muted: Bool) {
         // Demo mode has no Zoom to press; flash anyway so the flash can be previewed.
         if DemoMode.isOn {
-            if prefs.showFlash { flash.show(live: monitor.state != .live) }
+            if prefs.showFlash { flash.show(live: !muted) }
             return
         }
         let old = monitor.state
-        guard zoom.toggle() else { return }
+        guard zoom.set(muted: muted) else { return }
         // Flash what Zoom actually reports after the press, never an assumed result.
         monitor.refreshAfterToggle(from: old) { [weak self] new in
             guard let self, prefs.showFlash else { return }
