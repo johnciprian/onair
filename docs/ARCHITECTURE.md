@@ -62,7 +62,7 @@ mute item in Zoom's **Meeting** menu through the Accessibility API, and presses 
 - `Hotkey` registers the combo with Carbon's `RegisterEventHotKey`, which delivers both press and release
   system-wide without needing Input Monitoring permission.
 - `PressLogic` decides what a press means: a press toggles Zoom; a release after ≥ 0.3 s puts Zoom back. That
-  single rule gives tap = toggle, hold while muted = push-to-talk, and hold while live = cough.
+  single rule gives tap = toggle, hold while muted = push-to-talk, and hold while live = mute for a moment.
 - `AppModel` remembers the state at key-down and returns Zoom to exactly that state on a long release, rather
   than toggling again, so a slow or failed press can never leave the mic live after push-to-talk.
 - `KeyCombo` validates recorded shortcuts (⌃ or ⌘ required, except F13–F20) and renders them as keycaps, a

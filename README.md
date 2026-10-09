@@ -1,7 +1,7 @@
 # OnAir
 
 **Always know if they can hear you.** OnAir is a small native macOS menu bar app that shows whether your Zoom
-microphone is live, and gives you one hotkey to mute, unmute, push-to-talk, and cough.
+microphone is live, and gives you one hotkey to mute, unmute, and push-to-talk.
 
 <p align="center">
   <img src="docs/images/menu-bar-live.png" alt="The menu bar sign reading ON AIR in red" height="44">
@@ -16,7 +16,7 @@ microphone is live, and gives you one hotkey to mute, unmute, push-to-talk, and 
 - **One hotkey, three gestures.**
   - **Tap** to mute or unmute.
   - **Hold while muted** to talk (push-to-talk); let go to mute again.
-  - **Hold while live** to cough (momentary mute); let go to go live again.
+  - **Hold while live** to mute for a moment; let go to go live again.
 - **Optional on-screen cues**, all off by default and switched on from the menu:
   - **Floating badge:** a small ON AIR / OFF AIR badge you can drag anywhere; it snaps to screen edges.
   - **Screen-edge glow:** a thin red rim that slowly pulses around every display while you're live.

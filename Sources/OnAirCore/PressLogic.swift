@@ -1,7 +1,7 @@
 import Foundation
 
 /// Turns hotkey press/release into toggles: the press always toggles (so a tap feels instant), and a release
-/// after a hold toggles back — push-to-talk when muted, a "cough button" when live.
+/// after a hold toggles back — push-to-talk when muted, a momentary mute when live.
 public struct PressLogic {
     public static let holdThreshold: TimeInterval = 0.3
 
