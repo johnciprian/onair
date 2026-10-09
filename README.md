@@ -81,9 +81,10 @@ Click the menu bar sign to open the menu:
 | --- | --- |
 | Status row | The current state in words, e.g. "Microphone Live" with "Zoom" underneath. |
 | **Mute / Unmute** | Toggles Zoom's mic. Shows your hotkey; disabled outside a meeting. |
-| **Show On Screen** | Turns the floating badge, screen-edge glow, and toggle flash on or off. |
-| **Settings…** (⌘,) | Change the hotkey, launch at login, and check Accessibility access. |
+| **Show On Screen** | Switches for the floating badge, screen-edge glow, and toggle flash. The menu stays open, so you can flip several. |
+| **About OnAir** | The version, a link to this project, and the license. |
 | **Check for Updates…** | Looks for a new version now. Reads **Update Available…** when a daily check found one. |
+| **Settings…** (⌘,) | Change the hotkey, launch at login, and check Accessibility access. |
 | **Quit OnAir** (⌘Q) | Quits. |
 
 ## How it works

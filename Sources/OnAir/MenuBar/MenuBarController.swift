@@ -46,7 +46,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         menu.addItem(status)
 
         if state == .noPermission {
-            menu.addItem(item("Allow Accessibility Access…", #selector(grantAccess)))
+            menu.addItem(item("Allow Accessibility Access…", #selector(grantAccess), symbol: "hand.raised"))
         }
 
         let mute = item("Mute", #selector(toggleMute))
@@ -56,15 +56,28 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         menu.addItem(.sectionHeader(title: "Show On Screen"))
-        menu.addItem(item("Floating Badge", #selector(toggleBadge), on: app.prefs.showBadge))
-        menu.addItem(item("Screen-Edge Glow", #selector(toggleGlow), on: app.prefs.showGlow))
-        menu.addItem(item("Toggle Flash", #selector(toggleFlash), on: app.prefs.showFlash))
+        menu.addItem(switchItem("Floating Badge", isOn: app.prefs.showBadge) { [unowned app] on in
+            app.prefs.showBadge = on
+            app.render()
+        })
+        menu.addItem(switchItem("Screen-Edge Glow", isOn: app.prefs.showGlow) { [unowned app] on in
+            app.prefs.showGlow = on
+            app.render()
+        })
+        menu.addItem(switchItem("Toggle Flash", isOn: app.prefs.showFlash) { [unowned app] on in
+            app.prefs.showFlash = on
+        })
 
+        // Every action item has an icon; the switch rows don't need one (the switch is their visual).
         menu.addItem(.separator())
-        menu.addItem(item("Settings…", #selector(openSettings), key: ","))
-        menu.addItem(item(app.updater.hasUnseenUpdate ? "Update Available…" : "Check for Updates…", #selector(checkForUpdates)))
+        menu.addItem(item("About OnAir", #selector(showAbout), symbol: "info.circle"))
+        menu.addItem(item(app.updater.hasUnseenUpdate ? "Update Available…" : "Check for Updates…",
+                          #selector(checkForUpdates), symbol: "arrow.down.circle"))
+        menu.addItem(.separator())
+        menu.addItem(item("Settings…", #selector(openSettings), symbol: "gearshape", key: ","))
         menu.addItem(.separator())
         let quit = NSMenuItem(title: "Quit OnAir", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        quit.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
         menu.addItem(quit)
     }
 
@@ -84,18 +97,25 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         }
     }
 
-    private func item(_ title: String, _ action: Selector, on: Bool? = nil, key: String = "") -> NSMenuItem {
+    private func item(_ title: String, _ action: Selector, symbol: String? = nil, key: String = "") -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
         item.target = self
-        if let on { item.state = on ? .on : .off }
+        item.image = symbol.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
+        return item
+    }
+
+    private func switchItem(_ title: String, isOn: Bool, set: @escaping (Bool) -> Void) -> NSMenuItem {
+        let item = NSMenuItem()
+        let row = NSHostingView(rootView: SwitchRow(title: title, isOn: isOn, set: set))
+        row.frame = NSRect(origin: .zero, size: NSSize(width: 250, height: row.fittingSize.height))
+        row.autoresizingMask = .width  // stretch to the menu's width, so the switch lines up with the shortcuts
+        item.view = row
         return item
     }
 
     @objc private func toggleMute() { app.toggleMute() }
-    @objc private func toggleBadge() { app.prefs.showBadge.toggle(); app.render() }
-    @objc private func toggleGlow() { app.prefs.showGlow.toggle(); app.render() }
-    @objc private func toggleFlash() { app.prefs.showFlash.toggle() }
     @objc private func grantAccess() { app.requestAccessibility() }
+    @objc private func showAbout() { About.show() }
     @objc private func openSettings() { settings.show() }
     @objc private func checkForUpdates() { app.updater.checkForUpdates() }
 }
@@ -129,5 +149,32 @@ struct StatusRow: View {
         case .noMeeting, .notRunning:
             Circle().strokeBorder(.secondary, lineWidth: 1.5).frame(width: 10, height: 10)
         }
+    }
+}
+
+/// A row with a switch. Clicking a regular menu item always closes the menu; a control inside a view row
+/// doesn't, so several displays can be switched in one go (the same pattern as the Wi-Fi and Bluetooth menus).
+struct SwitchRow: View {
+    let title: String
+    @State var isOn: Bool
+    let set: (Bool) -> Void
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(Font(NSFont.menuFont(ofSize: 0)))
+                .accessibilityHidden(true)  // the switch carries the same label for VoiceOver
+            Spacer(minLength: 12)
+            Toggle(title, isOn: $isOn)
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .labelsHidden()
+        }
+        .padding(.leading, 16)  // lines the name up with the regular items' titles
+        .padding(.trailing, 14)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture { isOn.toggle() }  // clicking the name works too
+        .onChange(of: isOn) { _, on in set(on) }
     }
 }
