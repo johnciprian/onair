@@ -1,5 +1,6 @@
 import AppKit
 import OnAirCore
+import os
 
 /// Owns every piece of the app and wires them together. Displays read `monitor.state` themselves;
 /// `render()` re-applies preferences whenever the state or a setting changes.
@@ -19,6 +20,7 @@ final class AppModel {
     private var stateAtPress = MicState.noMeeting
     private let recorder = HotkeyRecorder()
     private let flash = FlashWindow()
+    private let log = Logger(subsystem: "com.johnciprian.OnAir", category: "hotkey")
     private lazy var onboarding = OnboardingWindow(app: self)
 
     init() {
@@ -52,6 +54,11 @@ final class AppModel {
         glow?.setEnabled(prefs.showGlow)
     }
 
+    /// Read fresh each time: the user may change Zoom's shortcut while OnAir is running.
+    var hotkeyConflictsWithZoom: Bool {
+        prefs.hotkey.map(zoom.shortcutConflicts) ?? false
+    }
+
     func registerHotkey() {
         press.cancel()  // a press of the old combo will never see its release
         guard let combo = prefs.hotkey else {
@@ -74,6 +81,7 @@ final class AppModel {
 
     private func keyDown() {
         let state = monitor.state
+        log.info("key down in state \(String(describing: state), privacy: .public)")
         guard press.press(at: ProcessInfo.processInfo.systemUptime, inMeeting: state.isInMeeting) else { return }
         stateAtPress = state
         setZoom(muted: state == .live)
@@ -92,7 +100,8 @@ final class AppModel {
         let old = monitor.state
         // Look for the change even if the press reports failure: an AX timeout can still take effect.
         // If Zoom was already in the target state nothing changes and nothing flashes.
-        _ = zoom.set(muted: muted)
+        let pressed = zoom.set(muted: muted)
+        log.info("asked Zoom for muted=\(muted, privacy: .public), press succeeded=\(pressed, privacy: .public)")
         // Flash what Zoom actually reports after the press, never an assumed result.
         monitor.refreshAfterToggle(from: old) { [weak self] new in
             guard let self, prefs.showFlash else { return }

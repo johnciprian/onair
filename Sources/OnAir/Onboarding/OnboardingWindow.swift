@@ -39,6 +39,7 @@ struct StepRow<Accessory: View>: View {
 struct OnboardingView: View {
     let prefs: Preferences
     let isHotkeyAvailable: () -> Bool
+    let hotkeyConflictsWithZoom: () -> Bool
     let onAllow: () -> Void
     let onRecord: () -> Void
     let onDone: () -> Void
@@ -70,9 +71,12 @@ struct OnboardingView: View {
                         done: hotkeyWorks) {
                     Button(hotkey == nil ? "Record…" : "Choose Another…", action: onRecord).buttonStyle(.glass)
                 }
-                StepRow(number: 3, title: "Turn off Zoom's shortcut",
-                        detail: "In Zoom → Settings → Keyboard Shortcuts, untick “Enable Global Shortcut” for Mute/Unmute My Audio so the key isn't handled twice.",
-                        done: nil) {
+                StepRow(number: 3, title: "Free the key in Zoom",
+                        detail: hotkey.map { hotkeyConflictsWithZoom()
+                            ? "Zoom also uses \($0.displayString) for Mute/Unmute, so it gets the key first. In Zoom → Settings → Keyboard Shortcuts, change that shortcut."
+                            : "Zoom isn't using \($0.displayString). You're all set." }
+                            ?? "Once your hotkey is set, OnAir checks Zoom isn't using the same one.",
+                        done: hotkey.map { _ in !hotkeyConflictsWithZoom() }) {
                     EmptyView()
                 }
                 HStack {
@@ -111,6 +115,7 @@ final class OnboardingWindow {
             window = UtilityWindow.make(content: OnboardingView(
                 prefs: app.prefs,
                 isHotkeyAvailable: { [unowned app] in app.hotkeyAvailable },
+                hotkeyConflictsWithZoom: { [unowned app] in app.hotkeyConflictsWithZoom },
                 onAllow: { [weak self] in self?.allow() },
                 onRecord: { [unowned app] in app.recordHotkey() },
                 onDone: { [weak self] in self?.finish() }

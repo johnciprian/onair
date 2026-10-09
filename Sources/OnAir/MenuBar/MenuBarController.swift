@@ -2,15 +2,17 @@ import AppKit
 import OnAirCore
 import SwiftUI
 
-/// SwiftUI host that lets clicks fall through to the status bar button underneath, which owns the menu.
+/// SwiftUI host that lets clicks fall through to the status bar button underneath, which opens the panel.
 final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }
 
 @MainActor
-final class MenuBarController: NSObject, NSMenuDelegate {
+final class MenuBarController: NSObject {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let pill: PassthroughHostingView<MenuBarPill>
+    /// A popover rather than a custom window: macOS draws its glass, shape and shadow, and closes it on outside clicks.
+    private let popover = NSPopover()
     private unowned let app: AppModel
 
     init(app: AppModel) {
@@ -26,9 +28,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             pill.centerXAnchor.constraint(equalTo: button.centerXAnchor),
             pill.centerYAnchor.constraint(equalTo: button.centerYAnchor),
         ])
-        let menu = NSMenu()
-        menu.delegate = self
-        statusItem.menu = menu
+        button.target = self
+        button.action = #selector(togglePanel)
+        popover.behavior = .transient
         update()
     }
 
@@ -40,44 +42,18 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         statusItem.button?.setAccessibilityLabel("OnAir: \(state.menuTitle)")
     }
 
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-        let state = app.monitor.state
-        let status = NSMenuItem(title: state.menuTitle, action: nil, keyEquivalent: "")
-        status.image = NSImage(systemSymbolName: state.menuSymbol, accessibilityDescription: nil)
-        status.isEnabled = false
-        menu.addItem(status)
-        menu.addItem(.separator())
-        menu.addItem(item("Floating Badge", #selector(toggleBadge), on: app.prefs.showBadge))
-        menu.addItem(item("Screen-Edge Glow", #selector(toggleGlow), on: app.prefs.showGlow))
-        menu.addItem(item("Toggle Flash", #selector(toggleFlash), on: app.prefs.showFlash))
-        menu.addItem(.separator())
-        menu.addItem(item(hotkeyTitle, #selector(recordHotkey)))
-        menu.addItem(item("Launch at Login", #selector(toggleLogin), on: LoginItem.isEnabled))
-        if state == .noPermission {
-            menu.addItem(item("Grant Accessibility Access…", #selector(grantAccess)))
+    @objc private func togglePanel() {
+        if popover.isShown {
+            popover.performClose(nil)
+            return
         }
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit OnAir", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        let controller = NSHostingController(rootView: MenuPanel(app: app, close: { [weak self] in self?.popover.performClose(nil) }))
+        controller.sizingOptions = .preferredContentSize
+        popover.contentViewController = controller
+        // Activate so the panel's switches respond to the first click and an outside click closes it.
+        NSApp.activate()
+        if let button = statusItem.button {
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        }
     }
-
-    private func item(_ title: String, _ action: Selector, on: Bool? = nil) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
-        item.target = self
-        if let on { item.state = on ? .on : .off }
-        return item
-    }
-
-    @objc private func toggleBadge() { app.prefs.showBadge.toggle(); app.render() }
-    @objc private func toggleGlow() { app.prefs.showGlow.toggle(); app.render() }
-    @objc private func toggleFlash() { app.prefs.showFlash.toggle() }
-    @objc private func toggleLogin() { LoginItem.isEnabled.toggle() }
-    @objc private func grantAccess() { app.requestAccessibility() }
-
-    private var hotkeyTitle: String {
-        guard let combo = app.prefs.hotkey else { return "Hotkey: Not Set — Record…" }
-        return app.hotkeyAvailable ? "Hotkey: \(combo.displayString) — Change…" : "Hotkey Unavailable — Choose Another…"
-    }
-
-    @objc private func recordHotkey() { app.recordHotkey() }
 }

@@ -11,6 +11,17 @@ extension MicState {
         }
     }
 
+    /// The line under the big status sign in the menu bar panel.
+    var panelSubtitle: String {
+        switch self {
+        case .live: "Your mic is live"
+        case .muted: "You're muted"
+        case .noMeeting: "Not in a meeting"
+        case .notRunning: "Zoom isn't open"
+        case .noPermission: "OnAir needs Accessibility access to read Zoom"
+        }
+    }
+
     var menuSymbol: String {
         switch self {
         case .live: "mic.fill"

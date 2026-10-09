@@ -30,6 +30,14 @@ final class ZoomController {
         return AXUIElementPerformAction(item.element, kAXPressAction as CFString) == .success
     }
 
+    /// True when Zoom's own Mute/Unmute shortcut is this combo — Zoom then gets the key press instead of OnAir.
+    func shortcutConflicts(with combo: KeyCombo) -> Bool {
+        let stored = UserDefaults(suiteName: "us.zoom.xos.Hotkey")?.dictionary(forKey: "[HK@combo]-HotkeyOnOffAudio")
+        return ZoomShortcut.conflicts(zoomKeyCode: stored?["hot key code"] as? Int,
+                                      zoomModifiers: stored?["hot key modifier"] as? Int,
+                                      with: combo)
+    }
+
     private func zoomApp() -> AXUIElement? {
         guard let pid = NSRunningApplication.runningApplications(withBundleIdentifier: Self.bundleID).first?.processIdentifier
         else { return nil }

@@ -2,7 +2,7 @@ import AppKit
 import OnAirCore
 import SwiftUI
 
-/// A crisp red line hugging the display edge with a soft falloff inward. Calm — no pulsing — but impossible to miss.
+/// A soft red glow diffusing in from the display edges — no hard line, no pulsing — calm but impossible to miss.
 struct GlowView: View {
     let monitor: StatusMonitor
     let cornerRadius: CGFloat
@@ -11,9 +11,9 @@ struct GlowView: View {
         let live = monitor.state == .live
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         ZStack {
-            // Narrow stroke + blur ≈ a 40–48 pt falloff; wider washed the whole menu bar red.
-            shape.strokeBorder(Theme.signalRed.opacity(0.4), lineWidth: 20).blur(radius: 20)
-            shape.strokeBorder(Theme.signalRed, lineWidth: 2)
+            // A wide faint haze plus a tighter, brighter band at the edge; both blurred so nothing reads as a line.
+            shape.strokeBorder(Theme.signalRed.opacity(0.25), lineWidth: 90).blur(radius: 70)
+            shape.strokeBorder(Theme.signalRed.opacity(0.45), lineWidth: 18).blur(radius: 18)
         }
         .clipShape(shape)
         .opacity(live ? 1 : 0)

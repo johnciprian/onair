@@ -38,7 +38,10 @@ final class StatusMonitor {
     func refreshAfterToggle(from old: MicState, attemptsLeft: Int = 6, completion: @escaping (MicState) -> Void) {
         refresh()
         if state != old { completion(state); return }
-        guard attemptsLeft > 1 else { return }
+        guard attemptsLeft > 1 else {
+            log.info("no state change seen after toggle; Zoom still reports \(String(describing: self.state), privacy: .public)")
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
             self?.refreshAfterToggle(from: old, attemptsLeft: attemptsLeft - 1, completion: completion)
         }
