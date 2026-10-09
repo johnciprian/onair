@@ -14,9 +14,9 @@ struct GlowView: View {
         let live = monitor.state == .live
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         ZStack {
-            // A short soft falloff (~25 pt) under a bright, barely blurred rim right at the edge.
-            shape.strokeBorder(Theme.signalRed.opacity(0.45), lineWidth: 10).blur(radius: 8)
-            shape.strokeBorder(Theme.signalRed.opacity(0.9), lineWidth: 3).blur(radius: 1.5)
+            // A soft falloff (~35 pt) under a bright, lightly blurred rim right at the edge.
+            shape.strokeBorder(Theme.signalRed.opacity(0.45), lineWidth: 16).blur(radius: 14)
+            shape.strokeBorder(Theme.signalRed.opacity(0.85), lineWidth: 4).blur(radius: 4)
         }
         .clipShape(shape)
         .opacity(dimmed ? 0.45 : 1)
