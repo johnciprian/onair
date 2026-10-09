@@ -19,18 +19,24 @@ struct WindowDragArea: NSViewRepresentable {
     func updateNSView(_ nsView: DragView, context: Context) {}
 }
 
-/// A chromeless window whose SwiftUI content draws its own glass shape — used for the recorder and onboarding.
+/// A chromeless Liquid Glass window — used for the recorder and onboarding. Following Apple's AppKit guidance
+/// (WWDC25 "Build an AppKit app with the new design"), the content sits *inside* an NSGlassEffectView that is the
+/// window's whole content, sized to it, with `cornerRadius` giving the shape. SwiftUI glass drawn inside a larger
+/// window left a faint rectangular backdrop around the rounded glass.
 /// Content puts `WindowDragArea()` in its background to be draggable.
 @MainActor
 enum GlassWindow {
-    static func make<Content: View>(content: Content) -> NSPanel {
+    static func make<Content: View>(content: Content, cornerRadius: CGFloat) -> NSPanel {
         let host = NSHostingView(rootView: content)
+        let glass = NSGlassEffectView()
+        glass.cornerRadius = cornerRadius
+        glass.contentView = host
         let panel = KeyablePanel(contentRect: NSRect(origin: .zero, size: host.fittingSize), styleMask: [.borderless], backing: .buffered, defer: false)
-        panel.contentView = host
+        panel.contentView = glass
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        // The glass casts its own rounded shadow; the window's would trace the square window frame.
-        panel.hasShadow = false
+        // Outside the rounded glass the window is fully transparent, so the system shadow follows the glass shape.
+        panel.hasShadow = true
         // Floating so it can't open buried behind other apps (macOS may not activate a just-launched menu bar app).
         panel.level = .floating
         panel.isReleasedWhenClosed = false

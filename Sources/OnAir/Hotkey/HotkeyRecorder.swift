@@ -47,7 +47,6 @@ struct RecorderView: View {
         .padding(24)
         .frame(width: 360)
         .background(WindowDragArea())
-        .glassEffect(.regular, in: .rect(cornerRadius: 28))
     }
 }
 
@@ -69,7 +68,7 @@ final class HotkeyRecorder {
             model: model,
             onSave: { [weak self] in self?.finish(self?.model.combo) },
             onCancel: { [weak self] in self?.finish(nil) }
-        ))
+        ), cornerRadius: 28)
         self.panel = panel
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             MainActor.assumeIsolated { self?.handle(event) }

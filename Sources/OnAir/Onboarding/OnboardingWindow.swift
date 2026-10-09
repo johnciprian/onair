@@ -86,7 +86,6 @@ struct OnboardingView: View {
             .padding(28)
             .frame(width: 480)
             .background(WindowDragArea())
-            .glassEffect(.regular, in: .rect(cornerRadius: 32))
         }
     }
 
@@ -116,7 +115,7 @@ final class OnboardingWindow {
                 onAllow: { [weak self] in self?.allow() },
                 onRecord: { [unowned app] in app.recordHotkey() },
                 onDone: { [weak self] in self?.finish() }
-            ))
+            ), cornerRadius: 32)
         }
         NSApp.activate()
         panel?.center()
