@@ -46,9 +46,9 @@ The displayed state always comes from reading Zoom, never from assuming the resu
 - The user must remove the same combo from Zoom's global shortcuts (noted on first run, see §5).
 
 ### Polling
-- `NSWorkspace` launch/terminate notifications start/stop monitoring when `zoom.us` opens/quits.
-- While Zoom runs: re-read state every 0.5 s, and immediately after each hotkey action.
-- While Zoom is closed: no polling.
+- One 0.5 s timer (0.1 s tolerance). While Zoom is closed each tick is only a running-apps lookup — no Accessibility calls.
+- After each hotkey toggle, re-read immediately and keep re-reading every 50 ms (up to 6 tries) until Zoom's menu reflects the change; the toggle flash shows the state that was read.
+- Accessibility calls to Zoom time out after 0.25 s so a hung Zoom can't freeze OnAir.
 
 ## 3. Architecture
 
@@ -56,18 +56,18 @@ Swift + SwiftUI app with AppKit where SwiftUI can't do it (status item, overlay 
 
 | Unit | Responsibility | Depends on |
 |---|---|---|
-| `ZoomState` | Pure function: `[menu item title] → state`. | nothing |
+| `ZoomMenu` | Pure function: `[menu item title] → state`, and which item to press. | nothing |
 | `PressLogic` | Pure function: press/release timestamps → `toggleBack: Bool`. | nothing |
-| `ZoomController` | Reads Zoom's Meeting menu titles via `AXUIElement`; `toggle()` performs `AXPress` on the mute/unmute item. Only file that knows about Zoom. | `ZoomState` |
-| `StatusMonitor` | `@Observable` current state; owns Zoom launch/quit observation and the 0.5 s timer. | `ZoomController` |
+| `ZoomController` | Reads Zoom's Meeting menu titles via `AXUIElement`; `toggle()` performs `AXPress` on the mute/unmute item. Only file that knows about Zoom. | `ZoomMenu` |
+| `StatusMonitor` | `@Observable` current state; owns the 0.5 s timer and the post-toggle re-read. | `ZoomController` |
 | `Hotkey` | Carbon `RegisterEventHotKey`; reports pressed/released; reports registration failure. | `PressLogic` |
-| `HotkeyRecorder` | Small window that captures the next key combo (local `NSEvent` monitor) and saves it. | `Settings` |
-| `Settings` | `UserDefaults`-backed: `showBadge`, `showGlow`, `showFlash`, hotkey (keyCode + modifiers), badge position. | nothing |
-| `MenuBarController` | `NSStatusItem` with SwiftUI-rendered pill + `NSMenu` (see §4.1). | `StatusMonitor`, `Settings` |
-| `BadgeWindow`, `GlowWindow`, `FlashWindow` | Overlay `NSPanel`s hosting SwiftUI views. | `StatusMonitor`, `Settings` |
+| `HotkeyRecorder` | Small window that captures the next key combo (local `NSEvent` monitor) and saves it. | `Preferences` |
+| `Preferences` | `UserDefaults`-backed: `showBadge`, `showGlow`, `showFlash`, hotkey (keyCode + modifiers), badge position. | nothing |
+| `MenuBarController` | `NSStatusItem` with SwiftUI-rendered pill + `NSMenu` (see §4.1). | `StatusMonitor`, `Preferences` |
+| `BadgeWindow`, `GlowWindow`, `FlashWindow` | Overlay `NSPanel`s hosting SwiftUI views. | `StatusMonitor`, `Preferences` |
 | `LoginItem` | `SMAppService.mainApp` register/unregister. | nothing |
 
-Overlay panels: borderless, non-activating, `.statusBar` level, `collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]`. Glow and flash ignore mouse events; badge is draggable and saves its position.
+Overlay panels: borderless, non-activating, `.statusBar` level, `collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]`. Glow and flash ignore mouse events; badge is draggable and saves its position. All overlays set `sharingType = .none` so they are excluded from screen sharing where macOS honors it.
 
 ## 4. Visual Design
 
@@ -87,7 +87,7 @@ Overlay panels: borderless, non-activating, `.statusBar` level, `collectionBehav
 - **Muted:** hairline capsule outline in label color, "OFF AIR" in secondary color, unlit dot.
 - **No meeting / Zoom closed:** template `mic` SF Symbol, dimmed.
 - **No permission:** `exclamationmark.triangle.fill` in system yellow.
-- State changes animate width and color with `.snappy`.
+- Content and color crossfade with `.snappy`; the status item's width snaps to fit the new content.
 
 **Menu:**
 ```
@@ -152,6 +152,7 @@ A single glass onboarding window with three steps, each with a checkmark when do
 - **Manual checklist** against a real Zoom test meeting (zoom.us/test): tap toggle; push-to-talk; cough button; hotkey with Zoom in background; Zoom quit mid-call; revoke and re-grant permission; each optional display on/off; two displays; full-screen app; light and dark mode; Reduce Motion and Reduce Transparency.
 
 ## 7. Build & Install
-- Xcode project at the repo root, built with `xcodebuild`, deployment target macOS 26.
+- Swift Package (`OnAirCore` library + `OnAir` executable + tests), deployment target macOS 26. `scripts/build.sh` builds release, assembles `OnAir.app` (Info.plist with `LSUIElement`), compiles the Icon Composer icon with `actool`, and code-signs. Chosen over an Xcode project so everything builds from the command line without a hand-maintained `.pbxproj`.
+- `ONAIR_DEMO=1` cycles noMeeting → muted → live every 3 s so displays can be checked without a Zoom call.
 - **Signing:** this Mac currently has no code-signing identity. Accessibility permission is tied to the app's signature, so with ad-hoc signing macOS forgets the permission after every rebuild. Fix: add an Apple ID in Xcode → Settings → Accounts (free personal team) to get an Apple Development certificate. Until then, builds are ad-hoc signed and permission must be re-granted after each rebuild.
 - Installs to `/Applications/OnAir.app`.
