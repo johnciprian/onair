@@ -4,6 +4,10 @@
 microphone is live, and gives you one hotkey to mute, unmute, and push-to-talk.
 
 <p align="center">
+  <img src="docs/images/screen-edge-glow.jpg" alt="A Mac screen with a thin red glow along its edges and an ON AIR badge in the corner" width="820">
+</p>
+
+<p align="center">
   <img src="docs/images/menu-bar-live.png" alt="The menu bar sign reading ON AIR in red" height="44">
   &nbsp;&nbsp;
   <img src="docs/images/menu-bar-muted.png" alt="The menu bar sign reading OFF AIR in outline" height="44">
@@ -27,6 +31,24 @@ microphone is live, and gives you one hotkey to mute, unmute, and push-to-talk.
 - **Updates itself.** OnAir checks for new versions once a day and installs them with one click.
 - **Native and private.** Built with SwiftUI and AppKit. No analytics, and the only network request is the
   daily update check.
+
+## A closer look
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="docs/images/menu.png" alt="OnAir's menu: Microphone Live, Mute with its shortcut, switches for the badge, glow and flash, About, Check for Updates, Settings and Quit" width="270"><br>
+      <sub>The menu</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="docs/images/toggle-flash.jpg" alt="A red rounded square in the middle of the screen with a microphone and ON AIR" width="240"><br>
+      <sub>The toggle flash</sub><br><br>
+      <img src="docs/images/badge-live.jpg" alt="The floating badge reading ON AIR in red" width="200"><br>
+      <img src="docs/images/badge-muted.jpg" alt="The floating badge reading OFF AIR on dark glass" width="200"><br>
+      <sub>The floating badge</sub>
+    </td>
+  </tr>
+</table>
 
 ## Requirements
 
