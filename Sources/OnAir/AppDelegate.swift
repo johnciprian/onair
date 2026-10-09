@@ -2,10 +2,11 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var monitor: StatusMonitor?
+    private var model: AppModel?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let zoom = ZoomController()
-        monitor = StatusMonitor(read: DemoMode.isOn ? DemoMode.read : zoom.readState)
+        let model = AppModel()
+        model.start()
+        self.model = model
     }
 }
