@@ -37,6 +37,10 @@ final class AppModel {
         hotkey.onPress = { [weak self] in self?.keyDown() }
         hotkey.onRelease = { [weak self] in self?.keyUp() }
         registerHotkey()
+        // A hold interrupted by sleep never gets its key-up; forget it so the hotkey keeps working.
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.press.cancel() }
+        }
         monitor.onChange = { [weak self] _ in self?.render() }
         render()
         if !prefs.hasCompletedOnboarding { onboarding.show() }
@@ -49,6 +53,7 @@ final class AppModel {
     }
 
     func registerHotkey() {
+        press.cancel()  // a press of the old combo will never see its release
         guard let combo = prefs.hotkey else {
             hotkey.unregister()
             hotkeyAvailable = true
@@ -85,7 +90,9 @@ final class AppModel {
             return
         }
         let old = monitor.state
-        guard zoom.set(muted: muted) else { return }
+        // Look for the change even if the press reports failure: an AX timeout can still take effect.
+        // If Zoom was already in the target state nothing changes and nothing flashes.
+        _ = zoom.set(muted: muted)
         // Flash what Zoom actually reports after the press, never an assumed result.
         monitor.refreshAfterToggle(from: old) { [weak self] new in
             guard let self, prefs.showFlash else { return }

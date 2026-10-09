@@ -29,6 +29,17 @@ final class KeyComboTests: XCTestCase {
         XCTAssertNil(KeyCombo(keyCode: UInt16(kVK_ANSI_M), modifierFlags: [.shift], characters: "M"))
     }
 
+    /// ⌥+letter types characters (µ, é) and is a dead key on some layouts.
+    func testRejectsOptionOnly() {
+        XCTAssertNil(KeyCombo(keyCode: UInt16(kVK_ANSI_M), modifierFlags: [.option], characters: "µ"))
+        XCTAssertNil(KeyCombo(keyCode: UInt16(kVK_ANSI_E), modifierFlags: [.option, .shift], characters: "´"))
+    }
+
+    func testAllowsCommandOrControl() {
+        XCTAssertNotNil(KeyCombo(keyCode: UInt16(kVK_ANSI_M), modifierFlags: [.command, .shift], characters: "m"))
+        XCTAssertNotNil(KeyCombo(keyCode: UInt16(kVK_ANSI_M), modifierFlags: [.control], characters: "m"))
+    }
+
     func testAllowsF13ThroughF20Alone() {
         XCTAssertEqual(KeyCombo(keyCode: UInt16(kVK_F13), modifierFlags: [.function], characters: nil)?.displayString, "F13")
         XCTAssertEqual(KeyCombo(keyCode: UInt16(kVK_F20), modifierFlags: [], characters: nil)?.keyLabel, "F20")

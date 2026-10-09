@@ -48,13 +48,17 @@ final class BadgeWindow {
         let host = DraggableHostingView(rootView: BadgeView(monitor: monitor))
         panel.contentView = host
         panel.setContentSize(host.fittingSize)
-        panel.setFrameOrigin(initialOrigin())
+        placeAtSavedOrigin()
         NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) { [weak self] _ in
+            // Only user drags (mouse held) snap and save; our own placement and snap animation must not.
+            guard NSEvent.pressedMouseButtons != 0 else { return }
             MainActor.assumeIsolated { self?.scheduleSnap() }
         }
         // A display was unplugged or rearranged: bring the badge back onto a connected screen.
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.snap() }
+            // Re-place from the saved spot without saving: a laptop that wakes before its external display
+            // reconnects would otherwise lose the user's position for good.
+            MainActor.assumeIsolated { self?.placeAtSavedOrigin() }
         }
     }
 
@@ -76,7 +80,8 @@ final class BadgeWindow {
 
     private func snap() {
         let frame = panel.frame
-        let screen = NSScreen.screens.first { $0.frame.intersects(frame) } ?? NSScreen.screens[0]
+        // The screen list can be briefly empty while displays reconfigure.
+        guard let screen = NSScreen.screens.first(where: { $0.frame.intersects(frame) }) ?? NSScreen.main else { return }
         let origin = BadgeSnap.origin(for: frame, in: screen.visibleFrame, margin: Self.edgeMargin)
         prefs.badgeOrigin = origin
         guard origin != frame.origin else { return }
@@ -87,14 +92,14 @@ final class BadgeWindow {
         }
     }
 
-    /// The saved spot if it's still on a connected screen; otherwise top-right, under the menu bar.
-    private func initialOrigin() -> CGPoint {
+    /// The saved spot if it's still on a connected screen; otherwise top-right of the main screen, under the menu bar.
+    private func placeAtSavedOrigin() {
         let size = panel.frame.size
         if let saved = prefs.badgeOrigin,
            let screen = NSScreen.screens.first(where: { $0.frame.intersects(CGRect(origin: saved, size: size)) }) {
-            return BadgeSnap.origin(for: CGRect(origin: saved, size: size), in: screen.visibleFrame, margin: Self.edgeMargin)
+            panel.setFrameOrigin(BadgeSnap.origin(for: CGRect(origin: saved, size: size), in: screen.visibleFrame, margin: Self.edgeMargin))
+        } else if let visible = NSScreen.main?.visibleFrame {
+            panel.setFrameOrigin(CGPoint(x: visible.maxX - size.width - Self.edgeMargin, y: visible.maxY - size.height - Self.edgeMargin))
         }
-        let visible = (NSScreen.main ?? NSScreen.screens[0]).visibleFrame
-        return CGPoint(x: visible.maxX - size.width - Self.edgeMargin, y: visible.maxY - size.height - Self.edgeMargin)
     }
 }

@@ -24,11 +24,11 @@ public struct KeyCombo: Codable, Equatable, Sendable {
         kVK_Home: "↖", kVK_End: "↘", kVK_PageUp: "⇞", kVK_PageDown: "⇟",
     ]
 
-    /// Returns nil for combos that would hijack normal typing everywhere: a bare key, or ⇧ + key.
-    /// F13–F20 are the exception — nothing types with them.
+    /// Returns nil for combos that would hijack normal typing everywhere: a bare key, ⇧ + key, or ⌥ + key
+    /// (⌥ types characters like µ and é). So ⌃ or ⌘ is required — except for F13–F20, which nothing types with.
     public init?(keyCode: UInt16, modifierFlags: NSEvent.ModifierFlags, characters: String?) {
         let mods = modifierFlags.intersection(Self.allowedModifiers)
-        guard Self.bareKeys.contains(Int(keyCode)) || !mods.subtracting(.shift).isEmpty else { return nil }
+        guard Self.bareKeys.contains(Int(keyCode)) || !mods.isDisjoint(with: [.control, .command]) else { return nil }
         self.keyCode = keyCode
         self.modifiers = mods.rawValue
         self.keyLabel = Self.label(forKeyCode: keyCode, characters: characters)

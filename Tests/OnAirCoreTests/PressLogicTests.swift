@@ -45,6 +45,14 @@ final class PressLogicTests: XCTestCase {
         XCTAssertFalse(logic.release(at: 5))
     }
 
+    /// If the Mac sleeps mid-hold the key-up never arrives; cancelling must let the next press work.
+    func testCancelClearsAStuckPress() {
+        var logic = PressLogic()
+        _ = logic.press(at: 10, inMeeting: true)
+        logic.cancel()
+        XCTAssertTrue(logic.press(at: 500, inMeeting: true))
+    }
+
     func testStateResetsBetweenPresses() {
         var logic = PressLogic()
         _ = logic.press(at: 10, inMeeting: true)

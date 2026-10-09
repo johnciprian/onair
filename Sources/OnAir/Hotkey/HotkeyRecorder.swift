@@ -36,7 +36,7 @@ struct RecorderView: View {
             }
             .frame(height: 52)
             .animation(.snappy, value: model.caps)
-            Text(model.rejected ? "Add ⌃, ⌥ or ⌘ — or use F13–F20 on its own." : "Tap toggles · Hold to talk")
+            Text(model.rejected ? "Include ⌃ or ⌘ — or use F13–F20 on its own." : "Tap toggles · Hold to talk")
                 .font(.callout)
                 .foregroundStyle(model.rejected ? AnyShapeStyle(Theme.signalRed) : AnyShapeStyle(.secondary))
             HStack(spacing: 12) {
@@ -46,6 +46,7 @@ struct RecorderView: View {
         }
         .padding(24)
         .frame(width: 360)
+        .background(WindowDragArea())
         .glassEffect(.regular, in: .rect(cornerRadius: 28))
     }
 }

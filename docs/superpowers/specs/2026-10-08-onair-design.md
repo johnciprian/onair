@@ -130,7 +130,7 @@ No hotkey recorded yet → "Hotkey: Not Set — Record…". Registration failure
 - Small glass window (~360 × 180 pt), centered, titled "Set Hotkey".
 - Shows the current combo as glass keycaps (one cap per modifier and key, e.g. ⌃ ⌥ M).
 - "Press your shortcut…" placeholder; caps animate in as keys are pressed; Esc cancels; Save / Cancel buttons.
-- Rejects combos with no modifier unless the key is F13–F20.
+- Requires ⌃ or ⌘ (bare keys, ⇧+key and ⌥+key would hijack typing) unless the key is F13–F20.
 
 ### 4.6 App icon
 A macOS-style squircle: a dark smoked-glass tile holding a lit red "ON AIR" sign plate with the sign typography and a soft bloom. Built in Icon Composer (layers: background, sign plate, lit text) so macOS can render its light/dark/tinted variants.

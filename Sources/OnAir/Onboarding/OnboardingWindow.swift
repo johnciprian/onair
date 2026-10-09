@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import OnAirCore
 import SwiftUI
 
 struct StepRow<Accessory: View>: View {
@@ -37,6 +38,7 @@ struct StepRow<Accessory: View>: View {
 
 struct OnboardingView: View {
     let prefs: Preferences
+    let isHotkeyAvailable: () -> Bool
     let onAllow: () -> Void
     let onRecord: () -> Void
     let onDone: () -> Void
@@ -46,6 +48,7 @@ struct OnboardingView: View {
         TimelineView(.periodic(from: .now, by: 1)) { _ in
             let trusted = AXIsProcessTrusted()
             let hotkey = prefs.hotkey
+            let hotkeyWorks = hotkey != nil && isHotkeyAvailable()
             VStack(alignment: .leading, spacing: 22) {
                 HStack(spacing: 16) {
                     SignLabel(live: true, size: 13)
@@ -63,9 +66,9 @@ struct OnboardingView: View {
                     Button("Allow…", action: onAllow).buttonStyle(.glass)
                 }
                 StepRow(number: 2, title: "Record your hotkey",
-                        detail: hotkey.map { "Using \($0.displayString). Tap to toggle, hold to talk." } ?? "Tap to toggle, hold to talk.",
-                        done: hotkey != nil) {
-                    Button("Record…", action: onRecord).buttonStyle(.glass)
+                        detail: hotkeyDetail(hotkey, works: hotkeyWorks),
+                        done: hotkeyWorks) {
+                    Button(hotkey == nil ? "Record…" : "Choose Another…", action: onRecord).buttonStyle(.glass)
                 }
                 StepRow(number: 3, title: "Turn off Zoom's shortcut",
                         detail: "In Zoom → Settings → Keyboard Shortcuts, untick “Enable Global Shortcut” for Mute/Unmute My Audio so the key isn't handled twice.",
@@ -82,8 +85,16 @@ struct OnboardingView: View {
             }
             .padding(28)
             .frame(width: 480)
+            .background(WindowDragArea())
             .glassEffect(.regular, in: .rect(cornerRadius: 32))
         }
+    }
+
+    private func hotkeyDetail(_ hotkey: KeyCombo?, works: Bool) -> String {
+        guard let hotkey else { return "Tap to toggle, hold to talk." }
+        return works
+            ? "Using \(hotkey.displayString). Tap to toggle, hold to talk."
+            : "\(hotkey.displayString) is taken by another app. Pick a different one."
     }
 }
 
@@ -91,6 +102,7 @@ struct OnboardingView: View {
 final class OnboardingWindow {
     private unowned let app: AppModel
     private var panel: NSPanel?
+    private var trustWatch: Timer?
 
     init(app: AppModel) {
         self.app = app
@@ -100,7 +112,8 @@ final class OnboardingWindow {
         if panel == nil {
             panel = GlassWindow.make(content: OnboardingView(
                 prefs: app.prefs,
-                onAllow: { [unowned app] in app.requestAccessibility() },
+                isHotkeyAvailable: { [unowned app] in app.hotkeyAvailable },
+                onAllow: { [weak self] in self?.allow() },
                 onRecord: { [unowned app] in app.recordHotkey() },
                 onDone: { [weak self] in self?.finish() }
             ))
@@ -110,7 +123,24 @@ final class OnboardingWindow {
         panel?.makeKeyAndOrderFront(nil)
     }
 
+    /// The system prompt and System Settings are ordinary windows, so step down to let them open in front
+    /// (Stage Manager may tuck this window aside), then come back on top once access is granted.
+    private func allow() {
+        panel?.level = .normal
+        app.requestAccessibility()
+        trustWatch?.invalidate()
+        trustWatch = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard AXIsProcessTrusted() else { return }
+                timer.invalidate()
+                self?.panel?.level = .floating
+                self?.show()
+            }
+        }
+    }
+
     private func finish() {
+        trustWatch?.invalidate()
         app.prefs.hasCompletedOnboarding = true
         panel?.orderOut(nil)
         panel = nil

@@ -7,6 +7,12 @@ import OnAirCore
 final class ZoomController {
     static let bundleID = "us.zoom.xos"
 
+    init() {
+        // The default for every AX call this process makes (menu items included, not just the app element),
+        // so a hung Zoom can't block our main thread for the 6 s system default.
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.25)
+    }
+
     /// nil when Zoom didn't answer (busy or hung) — distinct from "no meeting", so the display can hold its last state.
     func readState() -> MicState? {
         guard AXIsProcessTrusted() else { return .noPermission }

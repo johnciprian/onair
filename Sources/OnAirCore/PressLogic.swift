@@ -19,6 +19,13 @@ public struct PressLogic {
         return inMeeting
     }
 
+    /// Forgets a press whose release will never come (the Mac slept mid-hold, or the hotkey changed),
+    /// so the next press isn't mistaken for auto-repeat and ignored forever.
+    public mutating func cancel() {
+        pressedAt = nil
+        toggledOnPress = false
+    }
+
     /// Returns true when Zoom should be toggled back (the key was held, and the press did toggle).
     public mutating func release(at time: TimeInterval) -> Bool {
         defer { pressedAt = nil; toggledOnPress = false }
