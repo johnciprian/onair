@@ -29,7 +29,8 @@ enum GlassWindow {
         panel.contentView = host
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
+        // The glass casts its own rounded shadow; the window's would trace the square window frame.
+        panel.hasShadow = false
         // Floating so it can't open buried behind other apps (macOS may not activate a just-launched menu bar app).
         panel.level = .floating
         panel.isReleasedWhenClosed = false
