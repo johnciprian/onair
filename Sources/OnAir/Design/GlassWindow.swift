@@ -19,6 +19,8 @@ enum GlassWindow {
         panel.isMovableByWindowBackground = true
         panel.level = .floating
         panel.isReleasedWhenClosed = false
+        // Panels hide when their app isn't active, and macOS may refuse to activate a just-launched menu bar app.
+        panel.hidesOnDeactivate = false
         return panel
     }
 }

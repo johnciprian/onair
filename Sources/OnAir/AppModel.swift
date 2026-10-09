@@ -16,6 +16,7 @@ final class AppModel {
     private var press = PressLogic()
     private let recorder = HotkeyRecorder()
     private let flash = FlashWindow()
+    private lazy var onboarding = OnboardingWindow(app: self)
 
     init() {
         let zoom = ZoomController()
@@ -34,6 +35,7 @@ final class AppModel {
         registerHotkey()
         monitor.onChange = { [weak self] _ in self?.render() }
         render()
+        if !prefs.hasCompletedOnboarding { onboarding.show() }
     }
 
     func render() {
