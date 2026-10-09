@@ -3,7 +3,7 @@ import ApplicationServices
 import OnAirCore
 
 /// The only code that knows about Zoom. Reads and presses items in Zoom's "Meeting" menu through the
-/// Accessibility API — the same signal the old SwiftBar script used, but in-process instead of via osascript.
+/// Accessibility API (Zoom has no API for its mute state).
 final class ZoomController {
     static let bundleID = "us.zoom.xos"
 
@@ -41,10 +41,7 @@ final class ZoomController {
     private func zoomApp() -> AXUIElement? {
         guard let pid = NSRunningApplication.runningApplications(withBundleIdentifier: Self.bundleID).first?.processIdentifier
         else { return nil }
-        let app = AXUIElementCreateApplication(pid)
-        // A hung Zoom would otherwise block our main thread for the 6 s default on every poll.
-        AXUIElementSetMessagingTimeout(app, 0.25)
-        return app
+        return AXUIElementCreateApplication(pid)
     }
 
     /// nil when Zoom's menu bar couldn't be read; empty when there's no Meeting menu (not in a meeting).

@@ -20,6 +20,8 @@ final class AppModel {
     private var stateAtPress = MicState.noMeeting
     private let recorder = HotkeyRecorder()
     private let flash = FlashWindow()
+    /// A pending re-press while Zoom's menu catches up (see `press(muted:until:)`).
+    private var retry: DispatchWorkItem?
     private let log = Logger(subsystem: "com.johnciprian.OnAir", category: "hotkey")
     private lazy var onboarding = OnboardingWindow(app: self)
 
@@ -112,11 +114,24 @@ final class AppModel {
 
     private func setZoom(muted: Bool) {
         guard !DemoMode.isOn else { return }  // no Zoom to press; demo cycles states (and flashes) by itself
-        let pressed = zoom.set(muted: muted)
-        log.info("asked Zoom for muted=\(muted, privacy: .public), press succeeded=\(pressed, privacy: .public)")
-        // Zoom's menu takes up to ~1.3 s to reflect the press; show the requested state now and let polling
-        // confirm it (or put Zoom's real state back if it never does — see OptimisticState).
-        if pressed { monitor.expect(muted ? .muted : .live) }
+        retry?.cancel()  // the newest request wins
+        press(muted: muted, until: ProcessInfo.processInfo.systemUptime + 2)
+    }
+
+    /// Zoom's menu takes up to ~1.3 s to reflect a press, and until it does the item for the next request isn't
+    /// there yet (a short push-to-talk hold, a quick double tap). So keep trying until it appears.
+    private func press(muted: Bool, until deadline: TimeInterval) {
+        if zoom.set(muted: muted) {
+            log.info("pressed Zoom for muted=\(muted, privacy: .public)")
+            // Show the requested state now; polling confirms it, or puts Zoom's real state back (OptimisticState).
+            monitor.expect(muted ? .muted : .live)
+        } else if ProcessInfo.processInfo.systemUptime < deadline {
+            let work = DispatchWorkItem { [weak self] in self?.press(muted: muted, until: deadline) }
+            retry = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: work)
+        } else {
+            log.info("gave up pressing Zoom for muted=\(muted, privacy: .public)")
+        }
     }
 
     func requestAccessibility() {

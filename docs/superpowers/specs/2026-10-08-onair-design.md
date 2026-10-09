@@ -1,11 +1,11 @@
 # OnAir — Design Spec
 
 **Date:** 2026-10-08
-**Status:** Draft for review
+**Status:** Historical — the original design. See docs/ARCHITECTURE.md for the current design.
 
 ## 1. Purpose
 
-A native macOS menu bar app that shows, at a glance, whether John's Zoom microphone is live, and owns the hotkey that mutes/unmutes it. It replaces the SwiftBar script `~/Development/scripts/swiftBar/zoom-avs-status.1s.scpt`.
+A native macOS menu bar app that shows, at a glance, whether the user's Zoom microphone is live, and owns the hotkey that mutes/unmutes it. It replaced a SwiftBar script.
 
 **Success looks like:** one glance at the screen answers "can they hear me?" with no reading required; the hotkey feels instant; the app looks and moves like something Apple would ship.
 
