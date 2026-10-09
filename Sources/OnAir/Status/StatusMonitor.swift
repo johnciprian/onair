@@ -7,7 +7,8 @@ import os
 @MainActor @Observable
 final class StatusMonitor {
     private(set) var state: MicState
-    @ObservationIgnored var onChange: ((MicState) -> Void)?
+    /// Called with the old and new state.
+    @ObservationIgnored var onChange: ((MicState, MicState) -> Void)?
     @ObservationIgnored private let read: () -> MicState?
     @ObservationIgnored private var sticky = StickyState(.notRunning)
     @ObservationIgnored private var optimistic = OptimisticState()
@@ -41,7 +42,8 @@ final class StatusMonitor {
     private func show(_ new: MicState) {
         guard new != state else { return }
         log.info("state \(String(describing: self.state), privacy: .public) → \(String(describing: new), privacy: .public)")
+        let old = state
         state = new
-        onChange?(new)
+        onChange?(old, new)
     }
 }

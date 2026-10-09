@@ -43,7 +43,12 @@ final class AppModel {
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.press.cancel() }
         }
-        monitor.onChange = { [weak self] _ in self?.render() }
+        monitor.onChange = { [weak self] old, new in
+            guard let self else { return }
+            render()
+            // Flash on every mute change, whichever way it happened: OnAir's hotkey or menu, or Zoom itself.
+            if prefs.showFlash, old.isInMeeting, new.isInMeeting { flash.show(live: new == .live) }
+        }
         render()
         if !prefs.hasCompletedOnboarding { onboarding.show() }
     }
@@ -106,18 +111,12 @@ final class AppModel {
     }
 
     private func setZoom(muted: Bool) {
-        // Demo mode has no Zoom to press; flash anyway so the flash can be previewed.
-        if DemoMode.isOn {
-            if prefs.showFlash { flash.show(live: !muted) }
-            return
-        }
+        guard !DemoMode.isOn else { return }  // no Zoom to press; demo cycles states (and flashes) by itself
         let pressed = zoom.set(muted: muted)
         log.info("asked Zoom for muted=\(muted, privacy: .public), press succeeded=\(pressed, privacy: .public)")
         // Zoom's menu takes up to ~1.3 s to reflect the press; show the requested state now and let polling
         // confirm it (or put Zoom's real state back if it never does — see OptimisticState).
-        guard pressed else { return }
-        monitor.expect(muted ? .muted : .live)
-        if prefs.showFlash { flash.show(live: !muted) }
+        if pressed { monitor.expect(muted ? .muted : .live) }
     }
 
     func requestAccessibility() {

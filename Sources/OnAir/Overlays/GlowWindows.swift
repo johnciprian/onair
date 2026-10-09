@@ -12,8 +12,8 @@ struct GlowView: View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         ZStack {
             // A wide faint haze plus a tighter, brighter band at the edge; both blurred so nothing reads as a line.
-            shape.strokeBorder(Theme.signalRed.opacity(0.25), lineWidth: 90).blur(radius: 70)
-            shape.strokeBorder(Theme.signalRed.opacity(0.45), lineWidth: 18).blur(radius: 18)
+            shape.strokeBorder(Theme.signalRed.opacity(0.25), lineWidth: 40).blur(radius: 30)
+            shape.strokeBorder(Theme.signalRed.opacity(0.45), lineWidth: 10).blur(radius: 10)
         }
         .clipShape(shape)
         .opacity(live ? 1 : 0)
