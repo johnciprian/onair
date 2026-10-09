@@ -185,9 +185,10 @@ same identity, letting the permission survive rebuilds and updates. It uses the 
 ### Releasing
 
 1. Raise `CFBundleShortVersionString` (e.g. `1.1`) and `CFBundleVersion` (a whole number that only goes up) in
-   `Resources/Info.plist`, then commit and push.
+   `Resources/Info.plist`, and add a `## <version>` section to [CHANGELOG.md](CHANGELOG.md). Commit and push.
 2. Run `scripts/release.sh`. It builds and zips the app, signs the zip with the Sparkle update key, writes
-   `appcast.xml`, and publishes both as a GitHub release. Installed copies find it on their next check.
+   `appcast.xml`, and publishes both as a GitHub release. The changelog section becomes the release notes, on
+   GitHub and in the update window. Installed copies find the release on their next check.
 
 The update key lives in the maintainer's login Keychain, with a backup in 1Password. Without it, existing
 installs can't be sent updates.
