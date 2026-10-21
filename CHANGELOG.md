@@ -2,6 +2,11 @@
 
 Each version's section becomes its release notes: on the GitHub release and in OnAir's update window.
 
+## 1.1.1
+
+- The glow around the screen edges now pulses in place. Before, it grew out from the top-left corner of the
+  screen on every pulse.
+
 ## 1.1
 
 - **About OnAir** in the menu shows the version, a link to this project, and the license.
