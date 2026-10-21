@@ -7,32 +7,44 @@ import SwiftUI
 struct GlowView: View {
     let monitor: StatusMonitor
     let cornerRadius: CGFloat
-    @State private var dimmed = false
+    @State private var liveSince = Date()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// One full breath, bright → dim → bright.
+    private static let cycle: TimeInterval = 2.4
+    private static let dimmest = 0.45
 
     var body: some View {
         let live = monitor.state == .live
+        // The breath is read off the clock instead of a repeating animation. A repeating animation also
+        // catches any layout change made in the same transaction (the window sizing to its display), which
+        // made the rim sweep out from the top-left corner forever instead of breathing in place.
+        TimelineView(.animation(paused: !live || reduceMotion)) { context in
+            rim.opacity(reduceMotion ? 1 : breath(at: context.date))
+        }
+        .opacity(live ? 1 : 0)
+        .animation(live ? .easeOut(duration: 0.25) : .easeIn(duration: 0.4), value: live)
+        .onChange(of: live, initial: true) { _, live in
+            if live { liveSince = Date() }  // each live stretch starts at full strength
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+
+    private var rim: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        ZStack {
+        return ZStack {
             // A soft falloff (~35 pt) under a bright, lightly blurred rim right at the edge.
             shape.strokeBorder(Theme.signalRed.opacity(0.45), lineWidth: 16).blur(radius: 14)
             shape.strokeBorder(Theme.signalRed.opacity(0.85), lineWidth: 4).blur(radius: 4)
         }
         .clipShape(shape)
-        .opacity(dimmed ? 0.45 : 1)
-        .opacity(live ? 1 : 0)
-        .animation(live ? .easeOut(duration: 0.25) : .easeIn(duration: 0.4), value: live)
-        .onChange(of: live, initial: true) { _, live in
-            // The breathing runs only while live (and not with Reduce Motion); a plain animation back to
-            // full strength replaces the repeating one, which stops it.
-            if live && !reduceMotion {
-                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { dimmed = true }
-            } else {
-                withAnimation(.easeOut(duration: 0.2)) { dimmed = false }
-            }
-        }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
+    }
+
+    /// Eases between full strength and `dimmest` along a cosine, so every edge brightens and dims together.
+    private func breath(at date: Date) -> Double {
+        let phase = date.timeIntervalSince(liveSince) / Self.cycle * 2 * .pi
+        return Self.dimmest + (1 - Self.dimmest) * (1 + cos(phase)) / 2
     }
 }
 
@@ -66,8 +78,9 @@ final class GlowWindows {
             let radius: CGFloat = screen.safeAreaInsets.top > 0 ? 10 : 0
             let panel = OverlayPanel.make(level: .screenSaver)  // above the menu bar, so the top edge glows too
             panel.ignoresMouseEvents = true
+            // Size the window before the view goes in, so the view lays out once at full size.
+            panel.setFrame(screen.frame, display: false)
             panel.contentView = NSHostingView(rootView: GlowView(monitor: monitor, cornerRadius: radius))
-            panel.setFrame(screen.frame, display: true)
             panel.orderFrontRegardless()
             panels.append(panel)
         }
