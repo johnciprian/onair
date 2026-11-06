@@ -2,6 +2,13 @@
 
 Each version's section becomes its release notes: on the GitHub release and in OnAir's update window.
 
+## 1.1.2
+
+- OnAir is now signed and notarized by Apple, so new downloads open without a security warning.
+- **After this update, macOS will ask you to allow Accessibility again.** If OnAir is already switched on in
+  System Settings but still asks for access, run `tccutil reset Accessibility com.johnciprian.OnAir` in
+  Terminal, then allow it again.
+
 ## 1.1.1
 
 - The glow around the screen edges now pulses in place. Before, it grew out from the top-left corner of the

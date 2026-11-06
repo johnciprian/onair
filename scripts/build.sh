@@ -24,24 +24,28 @@ xcrun actool Resources/AppIcon.icon --compile "$APP/Contents/Resources" --platfo
     --output-partial-info-plist build/AppIcon-partial.plist > /dev/null
 
 # Accessibility permission is tied to the signature, so builds are signed with a stable identity to keep it:
-# 1. "OnAir Release Signing", the self-signed certificate releases use (backup: 1Password). It holds no
-#    personal details, unlike an Apple Development certificate, whose name includes its owner's email. It isn't
-#    trusted by macOS, so it's selected by its SHA-1 hash, which codesign accepts.
+# 1. A Developer ID Application certificate, the only kind Apple notarizes (backup: 1Password). Releases need it.
 # 2. Otherwise an Apple Development certificate, for contributors' own builds.
 # 3. Otherwise ad-hoc ("-"): Accessibility has to be allowed again after every build.
-IDENTITY=$(security find-certificate -c "OnAir Release Signing" -Z 2>/dev/null | awk '/SHA-1/ { print $3; exit }' || true)
+IDENTITY=$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ { print $2; exit }')
+if [[ -z "$IDENTITY" && "${1:-}" == "release" ]]; then
+    echo "Releases must be signed with a Developer ID Application certificate, and none was found."; exit 1
+fi
 [[ -n "$IDENTITY" ]] || IDENTITY=$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ { print $2; exit }')
-# The hardened runtime blocks code injection into an app that holds Accessibility access (and notarization
-# requires it); OnAir's one exception is in Resources/OnAir.entitlements. Sparkle's helpers are signed
-# inside-out first, as Sparkle's docs describe (Downloader keeps its own entitlements).
+# The hardened runtime blocks code injection into an app that holds Accessibility access, and notarization
+# requires it and a secure timestamp. Its library validation needs OnAir and Sparkle to share a Team ID, which
+# an ad-hoc build doesn't have, so it goes without. Sparkle's helpers are signed inside-out first, as Sparkle's
+# docs describe (Downloader keeps its own entitlements).
 SPARKLE="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
-sign() { codesign --force --options runtime --sign "${IDENTITY:--}" "$@"; }
+RUNTIME=""
+[[ -z "$IDENTITY" ]] || RUNTIME="--options runtime --timestamp"
+sign() { codesign --force $RUNTIME --sign "${IDENTITY:--}" "$@"; }
 sign "$SPARKLE/XPCServices/Installer.xpc"
 sign --preserve-metadata=entitlements "$SPARKLE/XPCServices/Downloader.xpc"
 sign "$SPARKLE/Autoupdate"
 sign "$SPARKLE/Updater.app"
 sign "$APP/Contents/Frameworks/Sparkle.framework"
-sign --entitlements Resources/OnAir.entitlements "$APP"
+sign "$APP"
 echo "Built $APP (signed by: $(codesign -dv --verbose=2 "$APP" 2>&1 | awk -F= '/^Authority/ { print $2; exit }'))"
 
 if [[ "${1:-}" == "install" ]]; then
@@ -56,5 +60,10 @@ if [[ "${1:-}" == "release" ]]; then
     VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
     ZIP=build/OnAir-$VERSION.zip
     ditto -c -k --keepParent "$APP" "$ZIP"  # ditto keeps the signature intact; plain zip can break it
+    # Apple checks the zip, then the ticket it issues is stapled to the app and zipped with it, so a download
+    # passes Gatekeeper offline. stapler fails if notarization did. "onair-notary" is in the login Keychain.
+    xcrun notarytool submit "$ZIP" --keychain-profile onair-notary --wait
+    xcrun stapler staple "$APP"
+    ditto -c -k --keepParent "$APP" "$ZIP"
     echo "Packaged $ZIP"
 fi
