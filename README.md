@@ -62,12 +62,9 @@ microphone is live, and gives you one hotkey to mute, unmute, and push-to-talk.
 1. Download `OnAir-<version>.zip` from the [latest release](https://github.com/johnciprian/onair/releases/latest)
    and double-click it to unzip.
 2. Drag **OnAir** into your **Applications** folder.
-3. Open it. macOS will say it can't check OnAir for malware and offer only **Done** or **Move to Trash**: click
-   **Done**. (OnAir isn't notarized by Apple; that needs a paid developer membership.)
-4. Open **System Settings → Privacy & Security**, scroll down to **Security**, and click **Open Anyway** next to
-   "OnAir was blocked". Confirm with your password, then click **Open**.
+3. Open it, and click **Open** if macOS asks whether you're sure. OnAir is signed and notarized by Apple.
 
-You only do this once. Later versions arrive through OnAir's own updater and open normally.
+Later versions arrive through OnAir's own updater.
 
 ### Build from source
 
@@ -177,21 +174,21 @@ tools can see everything.
 Accessibility permission is tied to the app's code signature, so `scripts/build.sh` signs every build with the
 same identity, letting the permission survive rebuilds and updates. It uses the first of these it finds:
 
-1. **OnAir Release Signing**, the project's self-signed certificate for releases (only the maintainer has it).
+1. A **Developer ID Application** certificate, which releases must use (only the maintainer has it).
 2. Your **Apple Development** certificate (Xcode → Settings → Accounts → Manage Certificates → + → Apple
    Development; it's free).
-3. Ad-hoc signing. You'll have to allow Accessibility again after every build.
+3. Ad-hoc signing, without the hardened runtime. You'll have to allow Accessibility again after every build.
 
 ### Releasing
 
 1. Raise `CFBundleShortVersionString` (e.g. `1.1`) and `CFBundleVersion` (a whole number that only goes up) in
    `Resources/Info.plist`, and add a `## <version>` section to [CHANGELOG.md](CHANGELOG.md). Commit and push.
-2. Run `scripts/release.sh`. It builds and zips the app, signs the zip with the Sparkle update key, writes
-   `appcast.xml`, and publishes both as a GitHub release. The changelog section becomes the release notes, on
+2. Run `scripts/release.sh`. It builds, notarizes and zips the app, signs the zip with the Sparkle update key,
+   writes `appcast.xml`, and publishes both as a GitHub release. The changelog section becomes the release notes, on
    GitHub and in the update window. Installed copies find the release on their next check.
 
 The update key lives in the maintainer's login Keychain, with a backup in 1Password. Without it, existing
-installs can't be sent updates.
+installs can't be sent updates. Notarizing uses a `notarytool` keychain profile named `onair-notary`.
 
 ## Roadmap
 

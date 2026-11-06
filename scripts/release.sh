@@ -26,7 +26,7 @@ rm -rf "$OUT" && mkdir -p "$OUT"
 cp "build/OnAir-$VERSION.zip" "$OUT/"
 # A notes file named like the zip goes into the appcast, so the update window lists what's new.
 printf '%s\n' "$NOTES" > "$OUT/OnAir-$VERSION.md"
-# Signs the zip with the update key in the login Keychain (backup: 1Password, "OnAir Sparkle update signing key")
+# Signs the notarized zip with the update key in the login Keychain (backup: 1Password, "OnAir Sparkle update signing key")
 # and writes appcast.xml. Installed copies read it from the latest release (SUFeedURL in Info.plist).
 .build/artifacts/sparkle/Sparkle/bin/generate_appcast --account onair --embed-release-notes \
     --download-url-prefix "https://github.com/johnciprian/onair/releases/download/$TAG/" "$OUT"

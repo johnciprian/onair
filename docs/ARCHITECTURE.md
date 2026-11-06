@@ -110,11 +110,9 @@ OnAir has no Dock icon, so an update window from a background check opens behind
 - **No sandbox, no App Store.** The App Sandbox doesn't allow controlling another app through Accessibility,
   which is the core of how OnAir works.
 - **Signing matters for Accessibility.** macOS ties the permission to the code signature, so every build is
-  signed with the same identity, and the permission survives updates. Releases use a self-signed certificate,
-  "OnAir Release Signing", rather than an Apple Development certificate, whose name contains its owner's email
-  and would be readable from every download. A self-signed certificate has no Team ID, so library validation
-  would refuse to load Sparkle. `Resources/OnAir.entitlements` turns that one check off; the rest of the
-  hardened runtime stays on.
+  signed with the same identity, and the permission survives updates. Releases use a Developer ID certificate
+  and are notarized, so a download opens without a Gatekeeper warning. OnAir and Sparkle share its Team ID, so
+  the hardened runtime stays fully on, with no entitlement exceptions.
 
 ## Demo mode
 
