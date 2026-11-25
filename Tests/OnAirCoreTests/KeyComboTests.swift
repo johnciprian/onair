@@ -91,3 +91,7 @@ final class KeyComboTests: XCTestCase {
         XCTAssertEqual(decoded, combo)
     }
 }
+
+final class DeliberateFailureTests: XCTestCase {
+    func testCIGoesRed() { let unused = 1; XCTFail("Broken on purpose, to see CI go red.") }
+}
