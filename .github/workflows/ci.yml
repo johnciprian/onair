@@ -1,0 +1,38 @@
+# CI: the checks every change must pass.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    name: Check
+    # macOS: OnAir is an AppKit app, so it compiles only against the macOS SDK that ships with Xcode.
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile everything, warnings are errors
+        run: swift build --build-tests -Xswiftc -warnings-as-errors
+      # Ad-hoc: a pull request's code is never signed with the developer's certificate.
+      - name: Build the app
+        run: ONAIR_ADHOC=1 scripts/build.sh
+      - name: The app's signature and Info.plist hold together
+        run: |
+          codesign --verify --deep --strict build/OnAir.app
+          plutil -lint build/OnAir.app/Contents/Info.plist
+  tests:
+    name: Tests
+    # macOS: the tests link OnAirCore, which is built for macOS only.
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests
+        run: swift test

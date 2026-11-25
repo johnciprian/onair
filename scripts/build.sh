@@ -2,6 +2,8 @@
 # Builds build/OnAir.app for Apple silicon (Intel Macs aren't supported).
 #   scripts/build.sh install   also copies it to /Applications and relaunches it.
 #   scripts/build.sh release   also zips it as build/OnAir-<version>.zip for sharing.
+#   ONAIR_ADHOC=1 scripts/build.sh   signs ad-hoc whatever certificates the Mac has. CI builds this way, so a
+#                                    pull request's code is never signed as the developer.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -27,11 +29,17 @@ xcrun actool Resources/AppIcon.icon --compile "$APP/Contents/Resources" --platfo
 # 1. A Developer ID Application certificate, the only kind Apple notarizes (backup: 1Password). Releases need it.
 # 2. Otherwise an Apple Development certificate, for contributors' own builds.
 # 3. Otherwise ad-hoc ("-"): Accessibility has to be allowed again after every build.
-IDENTITY=$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ { print $2; exit }')
-if [[ -z "$IDENTITY" && "${1:-}" == "release" ]]; then
-    echo "Releases must be signed with a Developer ID Application certificate, and none was found."; exit 1
+IDENTITY=""
+if [[ -n "${ONAIR_ADHOC:-}" && "${1:-}" == "release" ]]; then
+    echo "A release can't be signed ad-hoc. Run it without ONAIR_ADHOC."; exit 1
 fi
-[[ -n "$IDENTITY" ]] || IDENTITY=$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ { print $2; exit }')
+if [[ -z "${ONAIR_ADHOC:-}" ]]; then
+    IDENTITY=$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ { print $2; exit }')
+    if [[ -z "$IDENTITY" && "${1:-}" == "release" ]]; then
+        echo "Releases must be signed with a Developer ID Application certificate, and none was found."; exit 1
+    fi
+    [[ -n "$IDENTITY" ]] || IDENTITY=$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ { print $2; exit }')
+fi
 # The hardened runtime blocks code injection into an app that holds Accessibility access, and notarization
 # requires it and a secure timestamp. Its library validation needs OnAir and Sparkle to share a Team ID, which
 # an ad-hoc build doesn't have, so it goes without. Sparkle's helpers are signed inside-out first, as Sparkle's
@@ -46,7 +54,8 @@ sign "$SPARKLE/Autoupdate"
 sign "$SPARKLE/Updater.app"
 sign "$APP/Contents/Frameworks/Sparkle.framework"
 sign "$APP"
-echo "Built $APP (signed by: $(codesign -dv --verbose=2 "$APP" 2>&1 | awk -F= '/^Authority/ { print $2; exit }'))"
+SIGNER=$(codesign -dv --verbose=2 "$APP" 2>&1 | awk -F= '/^Authority/ { print $2; exit }')
+echo "Built $APP (signed by: ${SIGNER:-nobody, ad-hoc})"
 
 if [[ "${1:-}" == "install" ]]; then
     pkill -x OnAir || true

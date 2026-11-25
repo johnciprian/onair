@@ -155,12 +155,16 @@ crowded menu bar. ⌘-drag it into view.
 ```bash
 swift test                                   # unit tests for OnAirCore
 scripts/build.sh                             # build build/OnAir.app
+ONAIR_ADHOC=1 scripts/build.sh               # the same, signed ad-hoc (what CI runs)
 scripts/build.sh install                     # build, copy to /Applications, relaunch
 scripts/build.sh release                     # build and zip build/OnAir-<version>.zip
 scripts/release.sh                           # publish a new version (see Releasing)
 open --env ONAIR_DEMO=1 build/OnAir.app      # demo mode: cycles states every 3 s, no Zoom needed
 swift scripts/make-icon.swift                # re-render the icon's layers
 ```
+
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and every pull request: it
+compiles everything with warnings as errors, builds the app, and runs the unit tests.
 
 - **`Sources/OnAirCore`:** pure logic with no UI or system calls (state parsing, hotkey press timing, optimistic
   display, badge snapping, shortcut validation). Everything here is unit tested.
